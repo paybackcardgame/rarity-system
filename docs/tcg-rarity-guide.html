@@ -1,0 +1,2519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TCG Rarity Systems — A Collector's Field Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #07070f;
+    --surface: #0f0f1c;
+    --surface2: #16162a;
+    --border: rgba(255,255,255,0.07);
+    --text: #e8e4d8;
+    --muted: #7a7890;
+    --ygo-gold: #d4a017;
+    --ygo-dark: #1a1208;
+    --ygo-mid: #8b6914;
+    --mtg-blue: #2a6db5;
+    --mtg-light: #89b8e8;
+    --mtg-dark: #0a1e35;
+    --poke-red: #cc2222;
+    --poke-yellow: #f5c518;
+    --poke-dark: #1a0505;
+    --pb: #00c8a0;
+    --pb-light: #60eacc;
+    --pb-dark: #001a14;
+    --pb-accent: #ff4560;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size: 18px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── LAYOUT ── */
+  .app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 3rem 4rem 2rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 120% at 50% -20%, rgba(212,160,23,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .header-label {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: .3em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: .8rem;
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    font-weight: 900;
+    letter-spacing: -.01em;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #f0e8c0 0%, #d4a017 40%, #e8d080 70%, #c08010 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .header-sub {
+    font-size: 1rem;
+    color: var(--muted);
+    margin-top: .6rem;
+    font-style: italic;
+    font-weight: 300;
+  }
+
+  /* ── TABS ── */
+  .tabs-bar {
+    display: flex;
+    gap: 0;
+    padding: 0 4rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .tab-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    color: var(--muted);
+    padding: 1.2rem 2rem;
+    cursor: pointer;
+    position: relative;
+    transition: color .25s;
+    white-space: nowrap;
+  }
+
+  .tab-btn::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0; right: 0;
+    height: 2px;
+    background: transparent;
+    transition: background .25s;
+  }
+
+  .tab-btn.active { color: var(--text); }
+  .tab-btn[data-game="ygo"].active::after { background: var(--ygo-gold); }
+  .tab-btn[data-game="mtg"].active::after { background: var(--mtg-blue); }
+  .tab-btn[data-game="poke"].active::after { background: var(--poke-red); }
+  .tab-btn[data-game="payback"].active::after { background: var(--pb); }
+
+  /* ── PANELS ── */
+  .panel { display: none; animation: fadeIn .35s ease; }
+  .panel.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SECTION CHROME ── */
+  .game-hero {
+    padding: 4rem 4rem 3rem;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .game-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  #panel-ygo .game-hero::before {
+    background: radial-gradient(ellipse 60% 200% at 100% 50%, rgba(212,160,23,0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 100% at 0% 50%, rgba(139,105,20,0.06) 0%, transparent 60%);
+  }
+  #panel-mtg .game-hero::before {
+    background: radial-gradient(ellipse 60% 200% at 100% 50%, rgba(42,109,181,0.15) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 100% at 0% 50%, rgba(30,60,120,0.08) 0%, transparent 60%);
+  }
+  #panel-poke .game-hero::before {
+    background: radial-gradient(ellipse 60% 200% at 100% 50%, rgba(204,34,34,0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 100% at 0% 50%, rgba(245,197,24,0.06) 0%, transparent 60%);
+  }
+
+  .game-meta {
+    display: flex;
+    gap: 3rem;
+    align-items: flex-start;
+    position: relative;
+    z-index: 1;
+  }
+
+  .game-info { flex: 1; }
+
+  .game-eyebrow {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: .35em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  #panel-ygo .game-eyebrow { color: var(--ygo-gold); }
+  #panel-mtg .game-eyebrow { color: var(--mtg-light); }
+  #panel-poke .game-eyebrow { color: var(--poke-yellow); }
+
+  .game-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.6rem, 3vw, 2.6rem);
+    font-weight: 900;
+    line-height: 1.15;
+    margin-bottom: 1rem;
+  }
+
+  #panel-ygo .game-title {
+    background: linear-gradient(135deg, #fff8e0, #d4a017, #f0d060);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  #panel-mtg .game-title {
+    background: linear-gradient(135deg, #d8eaff, #2a6db5, #89b8e8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  #panel-poke .game-title {
+    background: linear-gradient(135deg, #fff8cc, #f5c518, #cc2222);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+
+  .game-desc {
+    font-size: 1.05rem;
+    color: #a09aB8;
+    max-width: 52ch;
+    font-weight: 300;
+    line-height: 1.8;
+  }
+
+  .stat-cluster {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 200px;
+  }
+
+  .stat-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    text-align: right;
+  }
+
+  .stat-number {
+    font-family: 'Cinzel', serif;
+    font-size: 1.8rem;
+    font-weight: 600;
+    line-height: 1;
+    margin-bottom: .2rem;
+  }
+
+  #panel-ygo .stat-number { color: var(--ygo-gold); }
+  #panel-mtg .stat-number { color: var(--mtg-light); }
+  #panel-poke .stat-number { color: var(--poke-yellow); }
+
+  .stat-label {
+    font-size: .7rem;
+    letter-spacing: .1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-family: 'Cinzel', serif;
+  }
+
+  /* ── RARITY GRID ── */
+  .section-content {
+    padding: 3rem 4rem;
+  }
+
+  .section-heading {
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: .35em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .section-heading::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .rarity-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  /* ── CARD MOCKUP ── */
+  .rarity-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform .2s, border-color .2s;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: stretch;
+    min-height: 360px;
+  }
+
+  .rarity-card:hover { transform: translateY(-3px); }
+
+  #panel-ygo .rarity-card:hover { border-color: rgba(212,160,23,0.3); }
+  #panel-mtg .rarity-card:hover { border-color: rgba(42,109,181,0.4); }
+  #panel-poke .rarity-card:hover { border-color: rgba(245,197,24,0.3); }
+  #panel-payback .rarity-card:hover { border-color: rgba(0,200,160,0.35); }
+
+  .card-preview {
+    width: 300px;
+    min-height: 390px;
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: rgba(0,0,0,0.25);
+    border-left: 1px solid var(--border);
+  }
+  .card-preview::before,
+  .card-preview::after {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* ── FOIL EFFECTS ── */
+  @keyframes holoShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  @keyframes diagonalShift {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: .6; }
+    50% { opacity: 1; }
+  }
+
+  .foil-none {
+    background: #2a2820;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .foil-name-only {
+    background: #1a1810;
+    border-bottom: 1px solid rgba(212,160,23,0.15);
+    position: relative;
+  }
+  .foil-name-only::after {
+    content: 'NAME FOIL';
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: .2em;
+    background: linear-gradient(90deg, #8b6914, #d4a017, #f0d060, #d4a017, #8b6914);
+    background-size: 200% auto;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    animation: holoShift 3s linear infinite;
+  }
+
+  .foil-super {
+    background: linear-gradient(135deg, #0a1830 0%, #0d2545 50%, #0a1830 100%);
+    border-bottom: 1px solid rgba(100,160,230,0.2);
+    position: relative;
+    overflow: hidden;
+  }
+  .foil-super::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 30%, rgba(100,180,255,0.15) 50%, transparent 70%);
+    animation: diagonalShift 2.5s ease-in-out infinite;
+  }
+
+  .foil-ultra {
+    background: linear-gradient(135deg, #1a1200, #2a1e00, #1a1200);
+    border-bottom: 1px solid rgba(212,160,23,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  .foil-ultra::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg, transparent 20%, rgba(212,160,23,0.2) 40%, rgba(240,210,80,0.3) 50%, rgba(212,160,23,0.2) 60%, transparent 80%);
+    background-size: 200% 200%;
+    animation: holoShift 2s linear infinite;
+  }
+
+  .foil-secret {
+    background: #0a0820;
+    border-bottom: 1px solid rgba(180,140,255,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  .foil-secret::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent 0px,
+      transparent 3px,
+      rgba(160,130,255,0.12) 3px,
+      rgba(160,130,255,0.12) 4px
+    );
+  }
+  .foil-secret::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 20%, rgba(200,160,255,0.25) 50%, transparent 80%);
+    animation: diagonalShift 2s ease-in-out infinite;
+  }
+
+  .foil-starlight {
+    background: #080c18;
+    border-bottom: 1px solid rgba(180,220,255,0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  .foil-starlight::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(180,220,255,0.1) 2px,
+      rgba(180,220,255,0.1) 3px
+    );
+  }
+  .foil-starlight::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(140,200,255,0.4) 30%, rgba(255,255,255,0.5) 50%, rgba(140,200,255,0.4) 70%, transparent 100%);
+    animation: holoShift 1.8s linear infinite;
+  }
+
+  .foil-ghost {
+    background: #12101e;
+    border-bottom: 1px solid rgba(220,210,255,0.25);
+    position: relative;
+    overflow: hidden;
+  }
+  .foil-ghost::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(220,210,255,0.15) 0%, transparent 70%);
+    animation: pulse 3s ease-in-out infinite;
+  }
+  .foil-ghost::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, transparent 20%, rgba(180,150,255,0.2) 35%, rgba(255,255,255,0.15) 50%, rgba(150,200,255,0.2) 65%, transparent 80%);
+    animation: holoShift 2.5s linear infinite;
+  }
+
+  /* MTG foils */
+  .foil-mtg-common { background: #1a1a14; border-bottom: 1px solid var(--border); }
+  .foil-mtg-uncommon {
+    background: linear-gradient(135deg, #1a1e24, #252e38, #1a1e24);
+    border-bottom: 1px solid rgba(150,175,200,0.2);
+  }
+  .foil-mtg-rare {
+    background: linear-gradient(135deg, #1a1400, #2a2000, #1a1400);
+    border-bottom: 1px solid rgba(212,160,23,0.3);
+    position: relative; overflow: hidden;
+  }
+  .foil-mtg-rare::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(212,160,23,0.15) 50%, transparent 70%);
+    animation: diagonalShift 3s ease-in-out infinite;
+  }
+  .foil-mtg-mythic {
+    background: linear-gradient(135deg, #1a0800, #2a1000, #1a0800);
+    border-bottom: 1px solid rgba(220,100,30,0.35);
+    position: relative; overflow: hidden;
+  }
+  .foil-mtg-mythic::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 20%, rgba(220,100,30,0.25) 40%, rgba(255,180,60,0.3) 50%, rgba(220,100,30,0.25) 60%, transparent 80%);
+    animation: holoShift 2s linear infinite;
+  }
+  .foil-mtg-foil {
+    background: #0c0c1a;
+    border-bottom: 1px solid rgba(200,150,255,0.3);
+    position: relative; overflow: hidden;
+  }
+  .foil-mtg-foil::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, rgba(255,80,120,0.2) 0%, rgba(80,200,255,0.2) 25%, rgba(120,255,160,0.2) 50%, rgba(255,200,60,0.2) 75%, rgba(255,80,200,0.2) 100%);
+    background-size: 300% 300%;
+    animation: holoShift 2s linear infinite;
+  }
+  .foil-mtg-textured {
+    background: #080c18;
+    border-bottom: 1px solid rgba(180,220,255,0.35);
+    position: relative; overflow: hidden;
+  }
+  .foil-mtg-textured::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(60deg, transparent 0px, transparent 2px, rgba(150,200,255,0.06) 2px, rgba(150,200,255,0.06) 3px);
+  }
+  .foil-mtg-textured::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(180,220,255,0.5) 30%, rgba(255,255,255,0.6) 50%, rgba(180,220,255,0.5) 70%, transparent 100%);
+    animation: holoShift 1.5s linear infinite;
+  }
+
+  /* Pokémon foils */
+  .foil-poke-common { background: #1a1410; border-bottom: 1px solid var(--border); }
+  .foil-poke-uncommon { background: #0e1a10; border-bottom: 1px solid rgba(100,180,100,0.15); }
+  .foil-poke-rare { background: linear-gradient(135deg, #1a1400, #201800); border-bottom: 1px solid rgba(245,197,24,0.2); }
+  .foil-poke-holo {
+    background: #0a0e1a;
+    border-bottom: 1px solid rgba(100,160,255,0.3);
+    position: relative; overflow: hidden;
+  }
+  .foil-poke-holo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 80% at 40% 40%, rgba(100,160,255,0.25) 0%, transparent 60%);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+  .foil-poke-rholo {
+    background: #0f0f18;
+    border-bottom: 1px solid rgba(180,140,255,0.25);
+    position: relative; overflow: hidden;
+  }
+  .foil-poke-rholo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(75deg, transparent 30%, rgba(180,140,255,0.2) 50%, transparent 70%);
+    animation: diagonalShift 2s ease-in-out infinite;
+  }
+  .foil-poke-ir {
+    background: linear-gradient(135deg, #0a1020, #0f1a30, #0a1020);
+    border-bottom: 1px solid rgba(120,180,255,0.3);
+    position: relative; overflow: hidden;
+  }
+  .foil-poke-ir::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 20%, rgba(120,200,255,0.2) 45%, rgba(200,160,255,0.2) 55%, transparent 80%);
+    animation: diagonalShift 2.2s ease-in-out infinite;
+  }
+  .foil-poke-sir {
+    background: linear-gradient(135deg, #0a0818, #120e28, #0a0818);
+    border-bottom: 1px solid rgba(200,140,255,0.4);
+    position: relative; overflow: hidden;
+  }
+  .foil-poke-sir::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, rgba(255,80,120,0.15) 0%, rgba(180,80,255,0.25) 30%, rgba(80,160,255,0.25) 60%, rgba(80,220,180,0.15) 100%);
+    background-size: 300% 300%;
+    animation: holoShift 1.8s linear infinite;
+  }
+  .foil-poke-hyper {
+    background: linear-gradient(135deg, #1a1200, #251a00, #1a1200);
+    border-bottom: 1px solid rgba(245,197,24,0.5);
+    position: relative; overflow: hidden;
+  }
+  .foil-poke-hyper::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 10%, rgba(245,197,24,0.35) 30%, rgba(255,240,80,0.45) 50%, rgba(245,197,24,0.35) 70%, transparent 90%);
+    animation: holoShift 1.5s linear infinite;
+  }
+
+  /* Card icon */
+  .card-icon {
+    position: relative;
+    z-index: 2;
+    width: 54px;
+    height: 76px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+  }
+
+  .card-icon.ygo-style { background: linear-gradient(160deg, #1a1408, #2a2010, #1a1408); }
+  .card-icon.mtg-style { background: linear-gradient(160deg, #08100e, #0e1e1a, #08100e); }
+  .card-icon.poke-style { background: linear-gradient(160deg, #0a0e18, #121828, #0a0e18); }
+
+  /* Rarity info */
+  .rarity-info-box {
+    padding: 2rem 2.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: .6rem;
+  }
+
+  .rarity-name {
+    font-family: 'Cinzel', serif;
+    font-size: .85rem;
+    font-weight: 600;
+    letter-spacing: .05em;
+    margin-bottom: .3rem;
+  }
+
+  #panel-ygo .rarity-name { color: var(--ygo-gold); }
+  #panel-mtg .rarity-name { color: var(--mtg-light); }
+  #panel-poke .rarity-name { color: var(--poke-yellow); }
+
+  .rarity-treatment {
+    font-size: .8rem;
+    color: var(--muted);
+    font-style: italic;
+    margin-bottom: .6rem;
+    line-height: 1.4;
+  }
+
+  .rarity-odds {
+    display: inline-block;
+    font-family: 'Cinzel', serif;
+    font-size: .65rem;
+    letter-spacing: .1em;
+    padding: .25rem .7rem;
+    border-radius: 30px;
+    border: 1px solid;
+  }
+
+  #panel-ygo .rarity-odds { color: var(--ygo-gold); border-color: rgba(212,160,23,0.3); background: rgba(212,160,23,0.07); }
+  #panel-mtg .rarity-odds { color: var(--mtg-light); border-color: rgba(42,109,181,0.4); background: rgba(42,109,181,0.08); }
+  #panel-poke .rarity-odds { color: var(--poke-yellow); border-color: rgba(245,197,24,0.3); background: rgba(245,197,24,0.07); }
+
+  /* ── PACK BREAKDOWN ── */
+  .pack-section {
+    padding: 0 4rem 4rem;
+  }
+
+  .pack-visual {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+  }
+
+  .pack-bar-label {
+    font-family: 'Cinzel', serif;
+    font-size: .7rem;
+    letter-spacing: .15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .pack-bar {
+    display: flex;
+    height: 36px;
+    border-radius: 6px;
+    overflow: hidden;
+    gap: 2px;
+    margin-bottom: 1.2rem;
+  }
+
+  .pack-seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: .05em;
+    transition: flex .3s ease;
+    cursor: default;
+    flex-shrink: 0;
+  }
+
+  .pack-seg:hover { filter: brightness(1.3); }
+
+  .seg-c   { background: #2a2820; color: #7a7060; }
+  .seg-u   { background: #1a2030; color: #6080a0; }
+  .seg-r   { background: #1a1400; color: #806010; }
+  .seg-m   { background: #1a0800; color: #804020; }
+  .seg-foil { background: linear-gradient(90deg, #300820, #082030, #083020, #302000); color: #908060; }
+  .seg-l   { background: #151510; color: #5a5a48; }
+
+  .seg-yc  { background: #2a2820; color: #7a7060; }
+  .seg-yr  { background: #1e1810; color: #806830; }
+  .seg-yu  { background: #1a1400; color: #806010; }
+  .seg-yx  { background: #120a1a; color: #604880; }
+
+  .seg-pc  { background: #1a1410; color: #7a6050; }
+  .seg-pu  { background: #0e1a10; color: #508050; }
+  .seg-rh  { background: #100f1c; color: #604880; }
+  .seg-hit { background: #1a0820; color: #804070; }
+
+  .pack-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .8rem 1.6rem;
+    margin-top: .5rem;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .75rem;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── INSIGHT BOX ── */
+  .insight {
+    margin-top: 1.5rem;
+    padding: 1.4rem 1.6rem;
+    border-radius: 8px;
+    border-left: 3px solid;
+    font-size: .9rem;
+    line-height: 1.8;
+    color: #a09aB8;
+    font-style: italic;
+  }
+
+  #panel-ygo .insight { border-color: var(--ygo-gold); background: rgba(212,160,23,0.05); }
+  #panel-mtg .insight { border-color: var(--mtg-blue); background: rgba(42,109,181,0.06); }
+  #panel-poke .insight { border-color: var(--poke-red); background: rgba(204,34,34,0.06); }
+
+  .insight strong {
+    font-family: 'Cinzel', serif;
+    font-size: .75rem;
+    letter-spacing: .1em;
+    font-style: normal;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: .4rem;
+  }
+
+  #panel-ygo .insight strong { color: var(--ygo-gold); }
+  #panel-mtg .insight strong { color: var(--mtg-light); }
+  #panel-poke .insight strong { color: var(--poke-yellow); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    header, .section-content, .pack-section { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .tabs-bar { padding: 0 1.5rem; overflow-x: auto; }
+    .game-meta { flex-direction: column; gap: 1.5rem; }
+    .stat-cluster { flex-direction: row; flex-wrap: wrap; }
+    .game-hero { padding: 2.5rem 1.5rem 2rem; }
+    .rarity-grid { grid-template-columns: 1fr; }
+    .rarity-card { flex-direction: column; min-height: unset; }
+    .card-preview { width: 100%; min-height: 390px; padding: 24px 16px; border-left: none; border-top: 1px solid var(--border); }
+    .rarity-info-box { padding: 1.4rem 1.5rem; }
+  }
+  /* ── PAYBACK ── */
+  #panel-payback .game-hero::before {
+    background: radial-gradient(ellipse 60% 200% at 100% 50%, rgba(0,200,160,0.14) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 100% at 0% 50%, rgba(255,69,96,0.07) 0%, transparent 60%);
+  }
+  #panel-payback .game-eyebrow { color: var(--pb); }
+  #panel-payback .game-title {
+    background: linear-gradient(135deg, #e0fff8, #00c8a0, #60eacc, #ff4560);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  #panel-payback .rarity-name { color: var(--pb-light); }
+  #panel-payback .rarity-odds { color: var(--pb); border-color: rgba(0,200,160,0.3); background: rgba(0,200,160,0.07); }
+  #panel-payback .stat-number { color: var(--pb); }
+  #panel-payback .insight { border-color: var(--pb); background: rgba(0,200,160,0.05); }
+  #panel-payback .insight strong { color: var(--pb); }
+
+  .card-icon.pb-style { background: linear-gradient(160deg, #001a14, #00291e, #001a14); }
+
+  /* Option selector */
+  .option-tabs { display: flex; gap: 8px; margin-bottom: 2rem; flex-wrap: wrap; }
+  .opt-btn {
+    font-family: 'Cinzel', serif;
+    font-size: .7rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: .6rem 1.2rem;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .opt-btn.active, .opt-btn:hover {
+    background: rgba(0,200,160,0.1);
+    border-color: rgba(0,200,160,0.4);
+    color: var(--pb-light);
+  }
+  .option-panel { display: none; }
+  .option-panel.active { display: block; }
+
+  /* Option badge */
+  .option-badge {
+    display: inline-block;
+    font-family: 'Cinzel', serif;
+    font-size: .65rem;
+    letter-spacing: .15em;
+    text-transform: uppercase;
+    padding: .3rem 1rem;
+    border-radius: 30px;
+    background: rgba(0,200,160,0.1);
+    border: 1px solid rgba(0,200,160,0.3);
+    color: var(--pb);
+    margin-bottom: 1.2rem;
+  }
+
+  .option-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: .5rem;
+  }
+
+  .option-desc {
+    font-size: .95rem;
+    color: #9090b0;
+    font-weight: 300;
+    font-style: italic;
+    max-width: 60ch;
+    line-height: 1.8;
+    margin-bottom: 2rem;
+  }
+
+  /* pro/con row */
+  .verdict-row {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .verdict-box {
+    flex: 1;
+    min-width: 200px;
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    font-size: .8rem;
+    line-height: 1.7;
+  }
+  .verdict-pro { background: rgba(0,200,160,0.07); border: 1px solid rgba(0,200,160,0.2); }
+  .verdict-con { background: rgba(255,69,96,0.06); border: 1px solid rgba(255,69,96,0.18); }
+  .verdict-label {
+    font-family: 'Cinzel', serif;
+    font-size: .6rem;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    margin-bottom: .4rem;
+    display: block;
+  }
+  .verdict-pro .verdict-label { color: var(--pb); }
+  .verdict-con .verdict-label { color: var(--pb-accent); }
+  .verdict-box p { color: #9090b0; }
+
+  /* Foil chips for Payback */
+  .foil-pb-standard { background: #0a1410; border-bottom: 1px solid var(--border); }
+  .foil-pb-foil {
+    background: #081410;
+    border-bottom: 1px solid rgba(0,200,160,0.3);
+    position: relative; overflow: hidden;
+  }
+  .foil-pb-foil::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 20%, rgba(0,200,160,0.25) 45%, rgba(100,240,200,0.3) 55%, transparent 80%);
+    animation: diagonalShift 2.2s ease-in-out infinite;
+  }
+  .foil-pb-premium {
+    background: #100a08;
+    border-bottom: 1px solid rgba(255,69,96,0.3);
+    position: relative; overflow: hidden;
+  }
+  .foil-pb-premium::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, rgba(255,69,96,0.12) 0%, rgba(0,200,160,0.2) 40%, rgba(255,200,60,0.15) 70%, transparent 100%);
+    background-size: 300% 300%;
+    animation: holoShift 2s linear infinite;
+  }
+  .foil-pb-expansion {
+    background: #08101a;
+    border-bottom: 1px solid rgba(0,160,255,0.4);
+    position: relative; overflow: hidden;
+  }
+  .foil-pb-expansion::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent 0px, transparent 3px,
+      rgba(0,160,255,0.08) 3px, rgba(0,160,255,0.08) 4px
+    );
+  }
+  .foil-pb-expansion::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(0,200,255,0.3) 30%, rgba(100,240,255,0.4) 50%, rgba(0,200,255,0.3) 70%, transparent 100%);
+    animation: holoShift 1.6s linear infinite;
+  }
+  .foil-pb-numbered {
+    background: #100818;
+    border-bottom: 1px solid rgba(180,120,255,0.4);
+    position: relative; overflow: hidden;
+  }
+  .foil-pb-numbered::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent 0px, transparent 2px,
+      rgba(160,100,255,0.1) 2px, rgba(160,100,255,0.1) 3px
+    );
+  }
+  .foil-pb-numbered::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 20%, rgba(200,140,255,0.3) 40%, rgba(255,200,255,0.35) 50%, rgba(200,140,255,0.3) 60%, transparent 80%);
+    animation: diagonalShift 2s ease-in-out infinite;
+  }
+  .foil-pb-gold {
+    background: #0f0c00;
+    border-bottom: 1px solid rgba(255,200,40,0.5);
+    position: relative; overflow: hidden;
+  }
+  .foil-pb-gold::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 10%, rgba(255,200,40,0.3) 30%, rgba(255,240,100,0.4) 50%, rgba(255,200,40,0.3) 70%, transparent 90%);
+    animation: holoShift 1.4s linear infinite;
+  }
+  .foil-pb-chase {
+    background: #08080c;
+    border-bottom: 1px solid rgba(255,255,255,0.35);
+    position: relative; overflow: hidden;
+  }
+  .foil-pb-chase::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      30deg,
+      transparent 0px, transparent 2px,
+      rgba(255,255,255,0.05) 2px, rgba(255,255,255,0.05) 3px
+    );
+  }
+  .foil-pb-chase::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(0,200,160,0.2) 0%, rgba(100,150,255,0.2) 25%, rgba(255,80,120,0.2) 50%, rgba(255,200,60,0.2) 75%, rgba(0,200,160,0.2) 100%);
+    background-size: 300% 100%;
+    animation: holoShift 1.8s linear infinite;
+  }
+
+  /* Number stamp */
+  .number-stamp {
+    position: absolute;
+    bottom: 8px;
+    right: 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: .08em;
+    color: rgba(180,120,255,0.8);
+    z-index: 3;
+  }
+  .gold-stamp {
+    position: absolute;
+    bottom: 8px;
+    right: 10px;
+    font-family: 'Cinzel', serif;
+    font-size: 9px;
+    letter-spacing: .08em;
+    color: rgba(255,200,40,0.9);
+    z-index: 3;
+  }
+
+  /* Distribution bar extras */
+  .seg-pbs  { background: #0a1410; color: #2a6050; }
+  .seg-pbf  { background: #081410; color: #007860; }
+  .seg-pbx  { background: #08101a; color: #204060; }
+  .seg-pbn  { background: #100818; color: #503080; }
+  .seg-pbg  { background: #0f0c00; color: #604000; }
+
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <p class="header-label">Trading Card Game Analysis</p>
+    <h1>The Rarity Codex</h1>
+    <p class="header-sub">How Yu-Gi-Oh!, Magic: The Gathering, and Pokémon engineer scarcity, desire, and the chase.</p>
+  </header>
+
+  <div class="tabs-bar">
+    <button class="tab-btn active" data-game="ygo" onclick="switchTab('ygo')">Yu-Gi-Oh!</button>
+    <button class="tab-btn" data-game="mtg" onclick="switchTab('mtg')">Magic: The Gathering</button>
+    <button class="tab-btn" data-game="poke" onclick="switchTab('poke')">Pokémon TCG</button>
+    <button class="tab-btn" data-game="payback" onclick="switchTab('payback')">Payback ✦</button>
+  </div>
+
+  <!-- ═══════════════════ YU-GI-OH ═══════════════════ -->
+  <div class="panel active" id="panel-ygo">
+    <div class="game-hero">
+      <div class="game-meta">
+        <div class="game-info">
+          <p class="game-eyebrow">Est. 1999 · Konami · 9 cards per pack</p>
+          <h2 class="game-title">Yu-Gi-Oh!</h2>
+          <p class="game-desc">The rarity <em>is</em> the foil. In no other TCG does the physical treatment of the card so completely define its tier. A player can identify rarity across a table by how the card catches light — no symbol required.</p>
+        </div>
+        <div class="stat-cluster">
+          <div class="stat-box">
+            <div class="stat-number">9</div>
+            <div class="stat-label">Cards per pack</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">1:50</div>
+            <div class="stat-label">Starlight odds</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">7+</div>
+            <div class="stat-label">Active rarity tiers</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-content">
+      <p class="section-heading">Rarity Tiers — Visual Treatment System</p>
+      <div class="rarity-grid">
+
+        <div class="rarity-card">
+          <div class="card-preview foil-none">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <!-- outer frame -->
+  <rect width="70" height="100" rx="4" fill="#888"/>
+  <rect x="2" y="2" width="66" height="96" rx="3" fill="#2a2418"/>
+  <!-- name bar -->
+  <rect x="4" y="3" width="62" height="9" rx="1.5" fill="#1e1a0e"/>
+  <text x="6" y="9.5" font-size="5" fill="#999" font-family="Georgia,serif" font-weight="bold" letter-spacing="0.2">MONSTER</text>
+  <!-- level stars -->
+  <text x="45" y="9.5" font-size="5.5" fill="#666" opacity="0.9">★★★★</text>
+  <!-- art box -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="#1e1c10"/>
+  <rect x="5" y="14" width="60" height="36" fill="#2a2418"/>
+  <!-- art border highlight -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+  <!-- attribute symbol -->
+  <circle cx="62" cy="10" r="4.5" fill="#cc2200"/>
+  <text x="62" y="12" text-anchor="middle" font-size="5" fill="#fff">🔥</text>
+  <!-- type line -->
+  <rect x="4" y="52" width="62" height="6" rx="1" fill="#2a2010"/>
+  <text x="6" y="56.5" font-size="3.8" fill="#999" font-family="sans-serif">[Warrior / Effect]</text>
+  <!-- desc box -->
+  <rect x="4" y="59" width="62" height="22" rx="1.5" fill="#22200e"/>
+  <text x="6" y="64" font-size="3" fill="#666" font-family="sans-serif">When summoned, you can</text>
+  <text x="6" y="68" font-size="3" fill="#666" font-family="sans-serif">draw 1 card. You can only</text>
+  <text x="6" y="72" font-size="3" fill="#666" font-family="sans-serif">use this effect once per turn.</text>
+  <!-- atk/def bar -->
+  <rect x="4" y="82" width="62" height="7" rx="1" fill="#1e1a0e"/>
+  <text x="6" y="87" font-size="4" fill="#888" font-family="sans-serif" letter-spacing="0.2">ATK/2400  DEF/2000</text>
+  <!-- card number -->
+  <text x="6" y="97" font-size="2.8" fill="#555" font-family="sans-serif">EN001</text>
+  <text x="64" y="97" font-size="2.8" fill="#555" font-family="sans-serif" text-anchor="end">©2024</text>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Common</div>
+            <div class="rarity-treatment">No foil whatsoever. Flat card stock, matte finish. Name and art printed with no shimmer.</div>
+            <span class="rarity-odds">~5 of 9 slots</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-name-only">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <!-- outer frame -->
+  <rect width="70" height="100" rx="4" fill="#b0b0b0"/>
+  <rect x="2" y="2" width="66" height="96" rx="3" fill="#2a2418"/>
+  <!-- name bar -->
+  <rect x="4" y="3" width="62" height="9" rx="1.5" fill="#1e1a0e"/>
+  <text x="6" y="9.5" font-size="5" fill="#d4a017" font-family="Georgia,serif" font-weight="bold" letter-spacing="0.2">MONSTER</text>
+  <!-- level stars -->
+  <text x="45" y="9.5" font-size="5.5" fill="#d4a017" opacity="0.9">★★★★</text>
+  <!-- art box -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="#1e1c10"/>
+  <rect x="5" y="14" width="60" height="36" fill="#2a2418"/>
+  <!-- art border highlight -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+  <!-- attribute symbol -->
+  <circle cx="62" cy="10" r="4.5" fill="#cc2200"/>
+  <text x="62" y="12" text-anchor="middle" font-size="5" fill="#fff">🔥</text>
+  <!-- type line -->
+  <rect x="4" y="52" width="62" height="6" rx="1" fill="#2a2010"/>
+  <text x="6" y="56.5" font-size="3.8" fill="#999" font-family="sans-serif">[Warrior / Effect]</text>
+  <!-- desc box -->
+  <rect x="4" y="59" width="62" height="22" rx="1.5" fill="#22200e"/>
+  <text x="6" y="64" font-size="3" fill="#666" font-family="sans-serif">When summoned, you can</text>
+  <text x="6" y="68" font-size="3" fill="#666" font-family="sans-serif">draw 1 card. You can only</text>
+  <text x="6" y="72" font-size="3" fill="#666" font-family="sans-serif">use this effect once per turn.</text>
+  <!-- atk/def bar -->
+  <rect x="4" y="82" width="62" height="7" rx="1" fill="#1e1a0e"/>
+  <text x="6" y="87" font-size="4" fill="#888" font-family="sans-serif" letter-spacing="0.2">ATK/2400  DEF/2000</text>
+  <!-- card number -->
+  <text x="6" y="97" font-size="2.8" fill="#555" font-family="sans-serif">EN001</text>
+  <text x="64" y="97" font-size="2.8" fill="#555" font-family="sans-serif" text-anchor="end">©2024</text>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Rare</div>
+            <div class="rarity-treatment">Foil applied to the card name only. Art remains completely flat. The gold shimmer on the name text is the only indicator.</div>
+            <span class="rarity-odds">~2 of 9 slots</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-super">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <!-- outer frame -->
+  <rect width="70" height="100" rx="4" fill="#6090c8"/>
+  <rect x="2" y="2" width="66" height="96" rx="3" fill="#2a2418"/>
+  <!-- name bar -->
+  <rect x="4" y="3" width="62" height="9" rx="1.5" fill="#1e1a0e"/>
+  <text x="6" y="9.5" font-size="5" fill="#d0d8e8" font-family="Georgia,serif" font-weight="bold" letter-spacing="0.2">MONSTER</text>
+  <!-- level stars -->
+  <text x="45" y="9.5" font-size="5.5" fill="#666" opacity="0.9">★★★★</text>
+  <!-- art box -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="#1e1c10"/>
+  <defs><linearGradient id="holoArt" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1a3a6a" stop-opacity="0.9"/><stop offset="50%" stop-color="#0a2050" stop-opacity="0.95"/><stop offset="100%" stop-color="#1a3a6a" stop-opacity="0.9"/></linearGradient></defs><rect x="5" y="14" width="60" height="36" fill="url(#holoArt)"/><rect x="5" y="14" width="60" height="36" fill="none" opacity="0.6"><animate attributeName="opacity" values="0.4;0.8;0.4" dur="2s" repeatCount="indefinite"/></rect>
+  <!-- art border highlight -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+  <!-- attribute symbol -->
+  <circle cx="62" cy="10" r="4.5" fill="#cc2200"/>
+  <text x="62" y="12" text-anchor="middle" font-size="5" fill="#fff">🔥</text>
+  <!-- type line -->
+  <rect x="4" y="52" width="62" height="6" rx="1" fill="#2a2010"/>
+  <text x="6" y="56.5" font-size="3.8" fill="#999" font-family="sans-serif">[Warrior / Effect]</text>
+  <!-- desc box -->
+  <rect x="4" y="59" width="62" height="22" rx="1.5" fill="#22200e"/>
+  <text x="6" y="64" font-size="3" fill="#666" font-family="sans-serif">When summoned, you can</text>
+  <text x="6" y="68" font-size="3" fill="#666" font-family="sans-serif">draw 1 card. You can only</text>
+  <text x="6" y="72" font-size="3" fill="#666" font-family="sans-serif">use this effect once per turn.</text>
+  <!-- atk/def bar -->
+  <rect x="4" y="82" width="62" height="7" rx="1" fill="#1e1a0e"/>
+  <text x="6" y="87" font-size="4" fill="#888" font-family="sans-serif" letter-spacing="0.2">ATK/2400  DEF/2000</text>
+  <!-- card number -->
+  <text x="6" y="97" font-size="2.8" fill="#555" font-family="sans-serif">EN001</text>
+  <text x="64" y="97" font-size="2.8" fill="#555" font-family="sans-serif" text-anchor="end">©2024</text>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Super Rare</div>
+            <div class="rarity-treatment">Full art holo with no name foil. The image shimmers but the name is flat — the inverse of Rare.</div>
+            <span class="rarity-odds">~1 of 9 slots</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-ultra">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <!-- outer frame -->
+  <rect width="70" height="100" rx="4" fill="#d4a017"/>
+  <rect x="2" y="2" width="66" height="96" rx="3" fill="#2a2418"/>
+  <!-- name bar -->
+  <rect x="4" y="3" width="62" height="9" rx="1.5" fill="#1e1a0e"/>
+  <text x="6" y="9.5" font-size="5" fill="#d4a017" font-family="Georgia,serif" font-weight="bold" letter-spacing="0.2">MONSTER</text>
+  <!-- level stars -->
+  <text x="45" y="9.5" font-size="5.5" fill="#d4a017" opacity="0.9">★★★★</text>
+  <!-- art box -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="#1e1c10"/>
+  <defs><linearGradient id="holoArt" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1a3a6a" stop-opacity="0.9"/><stop offset="50%" stop-color="#0a2050" stop-opacity="0.95"/><stop offset="100%" stop-color="#1a3a6a" stop-opacity="0.9"/></linearGradient></defs><rect x="5" y="14" width="60" height="36" fill="url(#holoArt)"/><rect x="5" y="14" width="60" height="36" fill="none" opacity="0.6"><animate attributeName="opacity" values="0.4;0.8;0.4" dur="2s" repeatCount="indefinite"/></rect>
+  <!-- art border highlight -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+  <!-- attribute symbol -->
+  <circle cx="62" cy="10" r="4.5" fill="#cc2200"/>
+  <text x="62" y="12" text-anchor="middle" font-size="5" fill="#fff">🔥</text>
+  <!-- type line -->
+  <rect x="4" y="52" width="62" height="6" rx="1" fill="#2a2010"/>
+  <text x="6" y="56.5" font-size="3.8" fill="#999" font-family="sans-serif">[Warrior / Effect]</text>
+  <!-- desc box -->
+  <rect x="4" y="59" width="62" height="22" rx="1.5" fill="#22200e"/>
+  <text x="6" y="64" font-size="3" fill="#666" font-family="sans-serif">When summoned, you can</text>
+  <text x="6" y="68" font-size="3" fill="#666" font-family="sans-serif">draw 1 card. You can only</text>
+  <text x="6" y="72" font-size="3" fill="#666" font-family="sans-serif">use this effect once per turn.</text>
+  <!-- atk/def bar -->
+  <rect x="4" y="82" width="62" height="7" rx="1" fill="#1e1a0e"/>
+  <text x="6" y="87" font-size="4" fill="#888" font-family="sans-serif" letter-spacing="0.2">ATK/2400  DEF/2000</text>
+  <!-- card number -->
+  <text x="6" y="97" font-size="2.8" fill="#555" font-family="sans-serif">EN001</text>
+  <text x="64" y="97" font-size="2.8" fill="#555" font-family="sans-serif" text-anchor="end">©2024</text>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Ultra Rare</div>
+            <div class="rarity-treatment">Gold foil name + full holo art. The standard "chase" rarity — both elements foiled simultaneously.</div>
+            <span class="rarity-odds">1 per pack (guaranteed)</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-secret">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <!-- outer frame -->
+  <rect width="70" height="100" rx="4" fill="#8060c0"/>
+  <rect x="2" y="2" width="66" height="96" rx="3" fill="#2a2418"/>
+  <!-- name bar -->
+  <rect x="4" y="3" width="62" height="9" rx="1.5" fill="#1e1a0e"/>
+  <text x="6" y="9.5" font-size="5" fill="#c0a8ff" font-family="Georgia,serif" font-weight="bold" letter-spacing="0.2">MONSTER</text>
+  <!-- level stars -->
+  <text x="45" y="9.5" font-size="5.5" fill="#d4a017" opacity="0.9">★★★★</text>
+  <!-- art box -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="#1e1c10"/>
+  <rect x="5" y="14" width="60" height="36" fill="#0a0820"/><line x1="5" y1="14" x2="41" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="8" y1="14" x2="44" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="11" y1="14" x2="47" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="14" y1="14" x2="50" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="17" y1="14" x2="53" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="20" y1="14" x2="56" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="23" y1="14" x2="59" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="26" y1="14" x2="62" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="29" y1="14" x2="65" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="32" y1="14" x2="68" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="35" y1="14" x2="71" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="38" y1="14" x2="74" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="41" y1="14" x2="77" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="44" y1="14" x2="80" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="47" y1="14" x2="83" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="50" y1="14" x2="86" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="53" y1="14" x2="89" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="56" y1="14" x2="92" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="59" y1="14" x2="95" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="62" y1="14" x2="98" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="65" y1="14" x2="101" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="68" y1="14" x2="104" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="71" y1="14" x2="107" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="74" y1="14" x2="110" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/><line x1="77" y1="14" x2="113" y2="50" stroke="#8060ff" stroke-width="0.4" opacity="0.5"/>
+  <!-- art border highlight -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+  <!-- attribute symbol -->
+  <circle cx="62" cy="10" r="4.5" fill="#cc2200"/>
+  <text x="62" y="12" text-anchor="middle" font-size="5" fill="#fff">🔥</text>
+  <!-- type line -->
+  <rect x="4" y="52" width="62" height="6" rx="1" fill="#2a2010"/>
+  <text x="6" y="56.5" font-size="3.8" fill="#999" font-family="sans-serif">[Warrior / Effect]</text>
+  <!-- desc box -->
+  <rect x="4" y="59" width="62" height="22" rx="1.5" fill="#22200e"/>
+  <text x="6" y="64" font-size="3" fill="#666" font-family="sans-serif">When summoned, you can</text>
+  <text x="6" y="68" font-size="3" fill="#666" font-family="sans-serif">draw 1 card. You can only</text>
+  <text x="6" y="72" font-size="3" fill="#666" font-family="sans-serif">use this effect once per turn.</text>
+  <!-- atk/def bar -->
+  <rect x="4" y="82" width="62" height="7" rx="1" fill="#1e1a0e"/>
+  <text x="6" y="87" font-size="4" fill="#888" font-family="sans-serif" letter-spacing="0.2">ATK/2400  DEF/2000</text>
+  <!-- card number -->
+  <text x="6" y="97" font-size="2.8" fill="#555" font-family="sans-serif">EN001</text>
+  <text x="64" y="97" font-size="2.8" fill="#555" font-family="sans-serif" text-anchor="end">©2024</text>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Secret Rare</div>
+            <div class="rarity-treatment">Diagonal-line holofoil pattern across the entire art. Card number exceeds set size (e.g. EN099 in a 98-card set).</div>
+            <span class="rarity-odds">~1 in 23 packs</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-starlight">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <!-- outer frame -->
+  <rect width="70" height="100" rx="4" fill="#80c0e0"/>
+  <rect x="2" y="2" width="66" height="96" rx="3" fill="#2a2418"/>
+  <!-- name bar -->
+  <rect x="4" y="3" width="62" height="9" rx="1.5" fill="#1e1a0e"/>
+  <text x="6" y="9.5" font-size="5" fill="#e0f0ff" font-family="Georgia,serif" font-weight="bold" letter-spacing="0.2">MONSTER</text>
+  <!-- level stars -->
+  <text x="45" y="9.5" font-size="5.5" fill="#d4a017" opacity="0.9">★★★★</text>
+  <!-- art box -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="#1e1c10"/>
+  <rect x="5" y="14" width="60" height="36" fill="#080c18"/><line x1="5" y1="14" x2="65" y2="14" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="16" x2="65" y2="16" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="18" x2="65" y2="18" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="20" x2="65" y2="20" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="22" x2="65" y2="22" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="24" x2="65" y2="24" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="26" x2="65" y2="26" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="28" x2="65" y2="28" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="30" x2="65" y2="30" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="32" x2="65" y2="32" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="34" x2="65" y2="34" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="36" x2="65" y2="36" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="38" x2="65" y2="38" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="40" x2="65" y2="40" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="42" x2="65" y2="42" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="44" x2="65" y2="44" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="46" x2="65" y2="46" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/><line x1="5" y1="48" x2="65" y2="48" stroke="#80c8ff" stroke-width="0.35" opacity="0.5"/>
+  <!-- art border highlight -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+  <!-- attribute symbol -->
+  <circle cx="62" cy="10" r="4.5" fill="#cc2200"/>
+  <text x="62" y="12" text-anchor="middle" font-size="5" fill="#fff">🔥</text>
+  <!-- type line -->
+  <rect x="4" y="52" width="62" height="6" rx="1" fill="#2a2010"/>
+  <text x="6" y="56.5" font-size="3.8" fill="#999" font-family="sans-serif">[Warrior / Effect]</text>
+  <!-- desc box -->
+  <rect x="4" y="59" width="62" height="22" rx="1.5" fill="#22200e"/>
+  <text x="6" y="64" font-size="3" fill="#666" font-family="sans-serif">When summoned, you can</text>
+  <text x="6" y="68" font-size="3" fill="#666" font-family="sans-serif">draw 1 card. You can only</text>
+  <text x="6" y="72" font-size="3" fill="#666" font-family="sans-serif">use this effect once per turn.</text>
+  <!-- atk/def bar -->
+  <rect x="4" y="82" width="62" height="7" rx="1" fill="#1e1a0e"/>
+  <text x="6" y="87" font-size="4" fill="#888" font-family="sans-serif" letter-spacing="0.2">ATK/2400  DEF/2000</text>
+  <!-- card number -->
+  <text x="6" y="97" font-size="2.8" fill="#555" font-family="sans-serif">EN001</text>
+  <text x="64" y="97" font-size="2.8" fill="#555" font-family="sans-serif" text-anchor="end">©2024</text>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Starlight Rare</div>
+            <div class="rarity-treatment">Horizontal parallel-line holofoil — fundamentally different from the diagonal Secret Rare pattern. The modern apex chase rarity.</div>
+            <span class="rarity-odds">~1 in 50 packs</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-ghost">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <!-- outer frame -->
+  <rect width="70" height="100" rx="4" fill="#e8e4f0"/>
+  <rect x="2" y="2" width="66" height="96" rx="3" fill="#2a2418"/>
+  <!-- name bar -->
+  <rect x="4" y="3" width="62" height="9" rx="1.5" fill="#1e1a0e"/>
+  <text x="6" y="9.5" font-size="5" fill="#d0c8e8" font-family="Georgia,serif" font-weight="bold" letter-spacing="0.2">MONSTER</text>
+  <!-- level stars -->
+  <text x="45" y="9.5" font-size="5.5" fill="#666" opacity="0.9">★★★★</text>
+  <!-- art box -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="#1e1c10"/>
+  <rect x="5" y="14" width="60" height="36" fill="#18162e" opacity="0.7"/><ellipse cx="35" cy="32" rx="20" ry="14" fill="#e8e0ff" opacity="0.1"/><ellipse cx="35" cy="32" rx="12" ry="8" fill="#d0c8ff" opacity="0.08"/>
+  <!-- art border highlight -->
+  <rect x="4" y="14" width="62" height="36" rx="1" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+  <!-- attribute symbol -->
+  <circle cx="62" cy="10" r="4.5" fill="#cc2200"/>
+  <text x="62" y="12" text-anchor="middle" font-size="5" fill="#fff">🔥</text>
+  <!-- type line -->
+  <rect x="4" y="52" width="62" height="6" rx="1" fill="#2a2010"/>
+  <text x="6" y="56.5" font-size="3.8" fill="#999" font-family="sans-serif">[Warrior / Effect]</text>
+  <!-- desc box -->
+  <rect x="4" y="59" width="62" height="22" rx="1.5" fill="#22200e"/>
+  <text x="6" y="64" font-size="3" fill="#666" font-family="sans-serif">When summoned, you can</text>
+  <text x="6" y="68" font-size="3" fill="#666" font-family="sans-serif">draw 1 card. You can only</text>
+  <text x="6" y="72" font-size="3" fill="#666" font-family="sans-serif">use this effect once per turn.</text>
+  <!-- atk/def bar -->
+  <rect x="4" y="82" width="62" height="7" rx="1" fill="#1e1a0e"/>
+  <text x="6" y="87" font-size="4" fill="#888" font-family="sans-serif" letter-spacing="0.2">ATK/2400  DEF/2000</text>
+  <!-- card number -->
+  <text x="6" y="97" font-size="2.8" fill="#555" font-family="sans-serif">EN001</text>
+  <text x="64" y="97" font-size="2.8" fill="#555" font-family="sans-serif" text-anchor="end">©2024</text>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Ghost Rare</div>
+            <div class="rarity-treatment">Intentionally faded, near-invisible art with heavy rainbow holo. The design is disorienting by purpose — the card is hard to read.</div>
+            <span class="rarity-odds">~1 in 72 packs</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="pack-section">
+      <p class="section-heading">Pack Anatomy — 9 Cards</p>
+      <div class="pack-visual">
+        <div class="pack-bar-label">Slot distribution</div>
+        <div class="pack-bar">
+          <div class="pack-seg seg-yc" style="flex:5">5× C</div>
+          <div class="pack-seg seg-yr" style="flex:2">2× R</div>
+          <div class="pack-seg seg-yu" style="flex:1">SR</div>
+          <div class="pack-seg seg-yx" style="flex:1">??</div>
+        </div>
+        <div class="pack-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#2a2820"></div>5 Commons</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#1e1810"></div>2 Rares</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#1a1400"></div>1 Super / Ultra Rare</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#120a1a"></div>1 chance slot (Secret / Starlight)</div>
+        </div>
+        <div class="insight">
+          <strong>Design Insight</strong>
+          Yu-Gi-Oh is unique in permanently binding gameplay identity to physical treatment. A card reprinted at a lower rarity is a genuinely different object — it looks different, feels different, and commands a different market price. This creates a powerful secondary collector market entirely separate from competitive play demand.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ MAGIC ═══════════════════ -->
+  <div class="panel" id="panel-mtg">
+    <div class="game-hero">
+      <div class="game-meta">
+        <div class="game-info">
+          <p class="game-eyebrow">Est. 1993 · Wizards of the Coast · 15 cards per pack</p>
+          <h2 class="game-title">Magic: The Gathering</h2>
+          <p class="game-desc">Rarity and visual treatment are fully decoupled. A foil common exists. A mythic rare may look nearly identical to a common. Special frame treatments — not just foil — drive the modern collector market.</p>
+        </div>
+        <div class="stat-cluster">
+          <div class="stat-box">
+            <div class="stat-number">15</div>
+            <div class="stat-label">Cards per pack</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">1:8</div>
+            <div class="stat-label">Mythic odds</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">4</div>
+            <div class="stat-label">Core rarity tiers</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-content">
+      <p class="section-heading">Base Rarity — Set Symbol Color Encodes Tier</p>
+      <div class="rarity-grid">
+
+        <div class="rarity-card">
+          <div class="card-preview foil-mtg-common">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <!-- outer frame -->
+  <rect width="70" height="100" rx="4" fill="#6a6050"/>
+  <rect x="2" y="2" width="66" height="96" rx="3" fill="#1a1a14"/>
+  <!-- mana cost circles top right -->
+  <circle cx="60" cy="8" r="5" fill="#333" stroke="#000" stroke-width="0.5"/>
+  <text x="60" y="10" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="bold">3</text>
+  <circle cx="51" cy="8" r="5" fill="#888" stroke="#000" stroke-width="0.5"/>
+  <text x="51" y="10" text-anchor="middle" font-size="5" fill="#fff">2</text>
+  <!-- title bar -->
+  <rect x="4" y="3" width="44" height="10" rx="1.5" fill="#6a6050" opacity="0.6"/>
+  <text x="6" y="10" font-size="5.5" fill="#f0e8d0" font-family="Georgia,serif" font-weight="bold">Dragon Sage</text>
+  <!-- art box -->
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="#0e1820"/>
+  <!-- art scene elements -->
+  <ellipse cx="35" cy="38" rx="25" ry="8" fill="#0a2820" opacity="0.8"/>
+  <polygon points="25,30 35,15 45,30 40,30 35,20 30,30" fill="#1a4030" opacity="0.7"/>
+  <circle cx="35" cy="22" r="6" fill="#304060" opacity="0.5"/>
+  
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+  <!-- type line with set symbol -->
+  <rect x="4" y="50" width="62" height="7" rx="1" fill="#6a6050" opacity="0.5"/>
+  <text x="6" y="55" font-size="4" fill="#c0b898" font-family="sans-serif">Creature — Dragon Wizard</text>
+  <!-- set symbol -->
+  <text x="62" y="55.5" text-anchor="end" font-size="7" fill="#555" font-weight="bold">●</text>
+  <!-- text box -->
+  <rect x="4" y="58" width="62" height="28" rx="1.5" fill="#12120c" opacity="0.95"/>
+  <rect x="4" y="58" width="62" height="28" rx="1.5" fill="none" stroke="#6a6050" stroke-width="0.4" opacity="0.4"/>
+  <text x="6" y="64" font-size="3" fill="#888" font-family="sans-serif" font-style="italic">Flying, Vigilance</text>
+  <text x="6" y="69" font-size="3" fill="#777" font-family="sans-serif">Whenever ~ attacks,</text>
+  <text x="6" y="73" font-size="3" fill="#777" font-family="sans-serif">scry 2 and draw a card.</text>
+  <!-- P/T box -->
+  <rect x="53" y="81" width="13" height="8" rx="1.5" fill="#6a6050"/>
+  <text x="59.5" y="87" text-anchor="middle" font-size="5.5" fill="#f0e8d0" font-weight="bold">4/5</text>
+  <!-- collector info -->
+  <text x="6" y="97" font-size="2.8" fill="#555" font-family="sans-serif">001/250 ★ EN</text>
+  <text x="64" y="97" text-anchor="end" font-size="2.8" fill="#555" font-family="sans-serif">©WotC</text>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Common</div>
+            <div class="rarity-treatment">Black or white set symbol. 10 cards fill this slot per pack. The workhorse of draft formats.</div>
+            <span class="rarity-odds">10 of 15 slots</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-mtg-uncommon">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <!-- outer frame -->
+  <rect width="70" height="100" rx="4" fill="#7a8898"/>
+  <rect x="2" y="2" width="66" height="96" rx="3" fill="#1a1a14"/>
+  <!-- mana cost circles top right -->
+  <circle cx="60" cy="8" r="5" fill="#448" stroke="#000" stroke-width="0.5"/>
+  <text x="60" y="10" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="bold">3</text>
+  <circle cx="51" cy="8" r="5" fill="#888" stroke="#000" stroke-width="0.5"/>
+  <text x="51" y="10" text-anchor="middle" font-size="5" fill="#fff">2</text>
+  <!-- title bar -->
+  <rect x="4" y="3" width="44" height="10" rx="1.5" fill="#7a8898" opacity="0.6"/>
+  <text x="6" y="10" font-size="5.5" fill="#f0e8d0" font-family="Georgia,serif" font-weight="bold">Dragon Sage</text>
+  <!-- art box -->
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="#0e1820"/>
+  <!-- art scene elements -->
+  <ellipse cx="35" cy="38" rx="25" ry="8" fill="#0a2820" opacity="0.8"/>
+  <polygon points="25,30 35,15 45,30 40,30 35,20 30,30" fill="#1a4030" opacity="0.7"/>
+  <circle cx="35" cy="22" r="6" fill="#304060" opacity="0.5"/>
+  
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+  <!-- type line with set symbol -->
+  <rect x="4" y="50" width="62" height="7" rx="1" fill="#7a8898" opacity="0.5"/>
+  <text x="6" y="55" font-size="4" fill="#c0b898" font-family="sans-serif">Creature — Dragon Wizard</text>
+  <!-- set symbol -->
+  <text x="62" y="55.5" text-anchor="end" font-size="7" fill="#aabbc8" font-weight="bold">◆</text>
+  <!-- text box -->
+  <rect x="4" y="58" width="62" height="28" rx="1.5" fill="#12120c" opacity="0.95"/>
+  <rect x="4" y="58" width="62" height="28" rx="1.5" fill="none" stroke="#7a8898" stroke-width="0.4" opacity="0.4"/>
+  <text x="6" y="64" font-size="3" fill="#888" font-family="sans-serif" font-style="italic">Flying, Vigilance</text>
+  <text x="6" y="69" font-size="3" fill="#777" font-family="sans-serif">Whenever ~ attacks,</text>
+  <text x="6" y="73" font-size="3" fill="#777" font-family="sans-serif">scry 2 and draw a card.</text>
+  <!-- P/T box -->
+  <rect x="53" y="81" width="13" height="8" rx="1.5" fill="#7a8898"/>
+  <text x="59.5" y="87" text-anchor="middle" font-size="5.5" fill="#f0e8d0" font-weight="bold">4/5</text>
+  <!-- collector info -->
+  <text x="6" y="97" font-size="2.8" fill="#555" font-family="sans-serif">001/250 ★ EN</text>
+  <text x="64" y="97" text-anchor="end" font-size="2.8" fill="#555" font-family="sans-serif">©WotC</text>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Uncommon</div>
+            <div class="rarity-treatment">Silver set symbol. 3 per pack, guaranteed. Frequently the most format-defining cards despite being "middle" rarity.</div>
+            <span class="rarity-odds">3 of 15 slots</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-mtg-rare">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <!-- outer frame -->
+  <rect width="70" height="100" rx="4" fill="#8a7030"/>
+  <rect x="2" y="2" width="66" height="96" rx="3" fill="#1a1a14"/>
+  <!-- mana cost circles top right -->
+  <circle cx="60" cy="8" r="5" fill="#8a3020" stroke="#000" stroke-width="0.5"/>
+  <text x="60" y="10" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="bold">3</text>
+  <circle cx="51" cy="8" r="5" fill="#888" stroke="#000" stroke-width="0.5"/>
+  <text x="51" y="10" text-anchor="middle" font-size="5" fill="#fff">2</text>
+  <!-- title bar -->
+  <rect x="4" y="3" width="44" height="10" rx="1.5" fill="#8a7030" opacity="0.6"/>
+  <text x="6" y="10" font-size="5.5" fill="#f0e8d0" font-family="Georgia,serif" font-weight="bold">Dragon Sage</text>
+  <!-- art box -->
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="#0e1820"/>
+  <!-- art scene elements -->
+  <ellipse cx="35" cy="38" rx="25" ry="8" fill="#0a2820" opacity="0.8"/>
+  <polygon points="25,30 35,15 45,30 40,30 35,20 30,30" fill="#1a4030" opacity="0.7"/>
+  <circle cx="35" cy="22" r="6" fill="#304060" opacity="0.5"/>
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="none" opacity="0.4"><animate attributeName="opacity" values="0.2;0.5;0.2" dur="3s" repeatCount="indefinite"/></rect>
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+  <!-- type line with set symbol -->
+  <rect x="4" y="50" width="62" height="7" rx="1" fill="#8a7030" opacity="0.5"/>
+  <text x="6" y="55" font-size="4" fill="#c0b898" font-family="sans-serif">Creature — Dragon Wizard</text>
+  <!-- set symbol -->
+  <text x="62" y="55.5" text-anchor="end" font-size="7" fill="#d4a017" font-weight="bold">★</text>
+  <!-- text box -->
+  <rect x="4" y="58" width="62" height="28" rx="1.5" fill="#12120c" opacity="0.95"/>
+  <rect x="4" y="58" width="62" height="28" rx="1.5" fill="none" stroke="#8a7030" stroke-width="0.4" opacity="0.4"/>
+  <text x="6" y="64" font-size="3" fill="#888" font-family="sans-serif" font-style="italic">Flying, Vigilance</text>
+  <text x="6" y="69" font-size="3" fill="#777" font-family="sans-serif">Whenever ~ attacks,</text>
+  <text x="6" y="73" font-size="3" fill="#777" font-family="sans-serif">scry 2 and draw a card.</text>
+  <!-- P/T box -->
+  <rect x="53" y="81" width="13" height="8" rx="1.5" fill="#8a7030"/>
+  <text x="59.5" y="87" text-anchor="middle" font-size="5.5" fill="#f0e8d0" font-weight="bold">4/5</text>
+  <!-- collector info -->
+  <text x="6" y="97" font-size="2.8" fill="#555" font-family="sans-serif">001/250 ★ EN</text>
+  <text x="64" y="97" text-anchor="end" font-size="2.8" fill="#555" font-family="sans-serif">©WotC</text>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Rare</div>
+            <div class="rarity-treatment">Gold set symbol. One per pack — unless the slot upgrades to Mythic. The standard target for competitive players.</div>
+            <span class="rarity-odds">7 in 8 packs</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-mtg-mythic">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <rect width="70" height="100" rx="4" fill="#803010"/>
+  <rect x="2" y="2" width="66" height="96" rx="3" fill="#1a1a14"/>
+  <circle cx="60" cy="8" r="5" fill="#c04010" stroke="#000" stroke-width="0.5"/>
+  <text x="60" y="10" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="bold">3</text>
+  <circle cx="51" cy="8" r="5" fill="#888" stroke="#000" stroke-width="0.5"/>
+  <text x="51" y="10" text-anchor="middle" font-size="5" fill="#fff">2</text>
+  <rect x="4" y="3" width="44" height="10" rx="1.5" fill="#803010" opacity="0.6"/>
+  <text x="6" y="10" font-size="5.5" fill="#f0e8d0" font-family="Georgia,serif" font-weight="bold">Dragon Sage</text>
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="#1a0800"/>
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="rgba(220,90,20,0.12)"/>
+  <ellipse cx="35" cy="38" rx="25" ry="8" fill="#2a0e00" opacity="0.8"/>
+  <polygon points="25,30 35,15 45,30 40,30 35,20 30,30" fill="#401808" opacity="0.7"/>
+  <circle cx="35" cy="22" r="6" fill="#603010" opacity="0.5"/>
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+  <rect x="4" y="50" width="62" height="7" rx="1" fill="#803010" opacity="0.5"/>
+  <text x="6" y="55" font-size="4" fill="#c0b898" font-family="sans-serif">Creature — Dragon Wizard</text>
+  <text x="62" y="55.5" text-anchor="end" font-size="7" fill="#e05820" font-weight="bold">⬡</text>
+  <rect x="4" y="58" width="62" height="28" rx="1.5" fill="#12120c" opacity="0.95"/>
+  <rect x="4" y="58" width="62" height="28" rx="1.5" fill="none" stroke="#803010" stroke-width="0.4" opacity="0.4"/>
+  <text x="6" y="64" font-size="3" fill="#888" font-family="sans-serif" font-style="italic">Flying, Vigilance</text>
+  <text x="6" y="69" font-size="3" fill="#777" font-family="sans-serif">Whenever ~ attacks,</text>
+  <text x="6" y="73" font-size="3" fill="#777" font-family="sans-serif">scry 2 and draw a card.</text>
+  <rect x="53" y="81" width="13" height="8" rx="1.5" fill="#803010"/>
+  <text x="59.5" y="87" text-anchor="middle" font-size="5.5" fill="#f0e8d0" font-weight="bold">4/5</text>
+  <text x="6" y="97" font-size="2.8" fill="#555" font-family="sans-serif">001/250 M EN</text>
+  <text x="64" y="97" text-anchor="end" font-size="2.8" fill="#555" font-family="sans-serif">©WotC</text>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Mythic Rare</div>
+            <div class="rarity-treatment">Orange-red set symbol. Replaces the Rare slot probabilistically — not in addition to it. The highest gameplay-tier rarity.</div>
+            <span class="rarity-odds">1 in 8 packs</span>
+          </div>
+        </div>
+
+      </div>
+
+      <p class="section-heading" style="margin-top: 1rem">Special Treatments — Overlaid on Any Rarity</p>
+      <div class="rarity-grid">
+
+        <div class="rarity-card">
+          <div class="card-preview foil-mtg-foil">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <rect width="70" height="100" rx="4" fill="#483878"/>
+  <rect x="2" y="2" width="66" height="96" rx="3" fill="#1a1a14"/>
+  <circle cx="60" cy="8" r="5" fill="#8030c0" stroke="#000" stroke-width="0.5"/>
+  <text x="60" y="10" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="bold">3</text>
+  <circle cx="51" cy="8" r="5" fill="#888" stroke="#000" stroke-width="0.5"/>
+  <text x="51" y="10" text-anchor="middle" font-size="5" fill="#fff">2</text>
+  <rect x="4" y="3" width="44" height="10" rx="1.5" fill="#483878" opacity="0.6"/>
+  <text x="6" y="10" font-size="5.5" fill="#f0e8d0" font-family="Georgia,serif" font-weight="bold">Dragon Sage</text>
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="#0c0c1a"/>
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="rgba(180,120,255,0.2)"/>
+  <!-- rainbow foil shimmer bars -->
+  <rect x="4" y="15" width="10" height="34" fill="rgba(255,80,120,0.15)"/>
+  <rect x="14" y="15" width="10" height="34" fill="rgba(80,200,255,0.15)"/>
+  <rect x="24" y="15" width="10" height="34" fill="rgba(120,255,160,0.15)"/>
+  <rect x="34" y="15" width="10" height="34" fill="rgba(255,200,60,0.15)"/>
+  <rect x="44" y="15" width="10" height="34" fill="rgba(255,80,200,0.15)"/>
+  <rect x="54" y="15" width="12" height="34" fill="rgba(120,180,255,0.15)"/>
+  <ellipse cx="35" cy="38" rx="25" ry="8" fill="#08081e" opacity="0.7"/>
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+  <rect x="4" y="50" width="62" height="7" rx="1" fill="#483878" opacity="0.5"/>
+  <text x="6" y="55" font-size="4" fill="#c0b898" font-family="sans-serif">Creature — Dragon Wizard</text>
+  <text x="62" y="55.5" text-anchor="end" font-size="7" fill="#c090ff" font-weight="bold">★</text>
+  <rect x="4" y="58" width="62" height="28" rx="1.5" fill="#12120c" opacity="0.95"/>
+  <rect x="4" y="58" width="62" height="28" rx="1.5" fill="none" stroke="#483878" stroke-width="0.4" opacity="0.4"/>
+  <text x="6" y="64" font-size="3" fill="#888" font-family="sans-serif" font-style="italic">Flying, Vigilance</text>
+  <text x="6" y="69" font-size="3" fill="#777" font-family="sans-serif">Whenever ~ attacks,</text>
+  <text x="6" y="73" font-size="3" fill="#777" font-family="sans-serif">scry 2 and draw a card.</text>
+  <rect x="53" y="81" width="13" height="8" rx="1.5" fill="#483878"/>
+  <text x="59.5" y="87" text-anchor="middle" font-size="5.5" fill="#f0e8d0" font-weight="bold">4/5</text>
+  <text x="6" y="97" font-size="2.8" fill="#555" font-family="sans-serif">001/250 ★ F EN</text>
+  <text x="64" y="97" text-anchor="end" font-size="2.8" fill="#555" font-family="sans-serif">©WotC</text>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Foil (Traditional)</div>
+            <div class="rarity-treatment">Rainbow foil overlay applied to any rarity tier. A foil common is a real and collectible thing. Replaces a common slot in the pack.</div>
+            <span class="rarity-odds">~1 in 3–4 packs</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-mtg-textured">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <!-- outer frame -->
+  <rect width="70" height="100" rx="4" fill="#204060"/>
+  <rect x="2" y="2" width="66" height="96" rx="3" fill="#1a1a14"/>
+  <!-- mana cost circles top right -->
+  <circle cx="60" cy="8" r="5" fill="#106090" stroke="#000" stroke-width="0.5"/>
+  <text x="60" y="10" text-anchor="middle" font-size="5.5" fill="#fff" font-weight="bold">3</text>
+  <circle cx="51" cy="8" r="5" fill="#888" stroke="#000" stroke-width="0.5"/>
+  <text x="51" y="10" text-anchor="middle" font-size="5" fill="#fff">2</text>
+  <!-- title bar -->
+  <rect x="4" y="3" width="44" height="10" rx="1.5" fill="#204060" opacity="0.6"/>
+  <text x="6" y="10" font-size="5.5" fill="#f0e8d0" font-family="Georgia,serif" font-weight="bold">Dragon Sage</text>
+  <!-- art box -->
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="#0e1820"/>
+  <!-- art scene elements -->
+  <ellipse cx="35" cy="38" rx="25" ry="8" fill="#0a2820" opacity="0.8"/>
+  <polygon points="25,30 35,15 45,30 40,30 35,20 30,30" fill="#1a4030" opacity="0.7"/>
+  <circle cx="35" cy="22" r="6" fill="#304060" opacity="0.5"/>
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="rgba(80,180,255,0.15)"/>
+  <rect x="4" y="15" width="62" height="34" rx="1" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+  <!-- type line with set symbol -->
+  <rect x="4" y="50" width="62" height="7" rx="1" fill="#204060" opacity="0.5"/>
+  <text x="6" y="55" font-size="4" fill="#c0b898" font-family="sans-serif">Creature — Dragon Wizard</text>
+  <!-- set symbol -->
+  <text x="62" y="55.5" text-anchor="end" font-size="7" fill="#80c8ff" font-weight="bold">★</text>
+  <!-- text box -->
+  <rect x="4" y="58" width="62" height="28" rx="1.5" fill="#12120c" opacity="0.95"/>
+  <rect x="4" y="58" width="62" height="28" rx="1.5" fill="none" stroke="#204060" stroke-width="0.4" opacity="0.4"/>
+  <text x="6" y="64" font-size="3" fill="#888" font-family="sans-serif" font-style="italic">Flying, Vigilance</text>
+  <text x="6" y="69" font-size="3" fill="#777" font-family="sans-serif">Whenever ~ attacks,</text>
+  <text x="6" y="73" font-size="3" fill="#777" font-family="sans-serif">scry 2 and draw a card.</text>
+  <!-- P/T box -->
+  <rect x="53" y="81" width="13" height="8" rx="1.5" fill="#204060"/>
+  <text x="59.5" y="87" text-anchor="middle" font-size="5.5" fill="#f0e8d0" font-weight="bold">4/5</text>
+  <!-- collector info -->
+  <text x="6" y="97" font-size="2.8" fill="#555" font-family="sans-serif">001/250 ★ EN</text>
+  <text x="64" y="97" text-anchor="end" font-size="2.8" fill="#555" font-family="sans-serif">©WotC</text>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Textured / Gilded / Etched Foil</div>
+            <div class="rarity-treatment">Premium foil variants introduced per-set. Borderless, showcase, and extended-art frames further layer visual distinction. These are the real chase slots.</div>
+            <span class="rarity-odds">Varies per set</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="pack-section">
+      <p class="section-heading">Pack Anatomy — 15 Cards</p>
+      <div class="pack-visual">
+        <div class="pack-bar-label">Slot distribution</div>
+        <div class="pack-bar">
+          <div class="pack-seg seg-c" style="flex:10">10× Common</div>
+          <div class="pack-seg seg-u" style="flex:3">3× U</div>
+          <div class="pack-seg seg-r" style="flex:1">R/M</div>
+          <div class="pack-seg seg-l" style="flex:1">L</div>
+        </div>
+        <div class="pack-bar-label" style="margin-top:.8rem">With foil chance</div>
+        <div class="pack-bar">
+          <div class="pack-seg seg-c" style="flex:9">9× Common</div>
+          <div class="pack-seg seg-foil" style="flex:1">F</div>
+          <div class="pack-seg seg-u" style="flex:3">3× U</div>
+          <div class="pack-seg seg-r" style="flex:1">R/M</div>
+          <div class="pack-seg seg-l" style="flex:1">L</div>
+        </div>
+        <div class="pack-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#2a2820"></div>10 Commons</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#1a2030"></div>3 Uncommons</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#1a1400"></div>1 Rare (~87%)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#1a0800"></div>or Mythic Rare (~13%)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#151510"></div>1 Land</div>
+          <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(90deg,#300820,#082030)"></div>~25% chance foil replaces a common</div>
+        </div>
+        <div class="insight">
+          <strong>Design Insight</strong>
+          Magic's separation of rarity from visual treatment gives it the most flexible reprint policy of the three games. The same card can be reprinted at any rarity, in any frame, in any foil treatment — without changing its gameplay identity. This has proven essential for keeping competitive formats accessible while maintaining a robust collector tier above it.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ POKÉMON ═══════════════════ -->
+  <div class="panel" id="panel-poke">
+    <div class="game-hero">
+      <div class="game-meta">
+        <div class="game-info">
+          <p class="game-eyebrow">Est. 1996 · The Pokémon Company · 10 cards per pack</p>
+          <h2 class="game-title">Pokémon TCG</h2>
+          <p class="game-desc">The modern Scarlet & Violet era introduced a collector tier fully decoupled from competitive play. A Charizard ex as a Double Rare and as a Special Illustration Rare are equally playable — the SIR market is driven entirely by art quality.</p>
+        </div>
+        <div class="stat-cluster">
+          <div class="stat-box">
+            <div class="stat-number">10</div>
+            <div class="stat-label">Cards per pack</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">1:60</div>
+            <div class="stat-label">Avg SIR odds</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">Reverse holo rate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-content">
+      <p class="section-heading">Classic Symbols — Printed in Card Corner</p>
+      <div class="rarity-grid">
+
+        <div class="rarity-card">
+          <div class="card-preview foil-poke-common">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  
+  <!-- card body -->
+  <rect width="70" height="100" rx="5" fill="#7a9868"/>
+  <rect x="2.5" y="2.5" width="65" height="95" rx="4" fill="#f5f0e8"/>
+  <!-- header bar -->
+  <rect x="4" y="4" width="62" height="12" rx="2" fill="#7a9868" opacity="0.85"/>
+  <!-- stage badge -->
+  <rect x="5" y="5.5" width="16" height="9" rx="1.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="13" y="12" text-anchor="middle" font-size="4" fill="#fff" font-weight="bold">BASIC</text>
+  <!-- pokemon name -->
+  <text x="23" y="12.5" font-size="6" fill="#fff" font-family="sans-serif" font-weight="bold" letter-spacing="-0.2">Drakon</text>
+  <!-- HP -->
+  <text x="56" y="12" font-size="4.5" fill="#444" font-family="sans-serif" font-weight="bold" text-anchor="middle">200 HP</text>
+  <!-- type symbol -->
+  <circle cx="66" cy="10" r="4.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="66" y="12.5" text-anchor="middle" font-size="5.5" fill="#fff">⚡</text>
+  <!-- art box -->
+  <rect x="8" y="18" width="54" height="32" rx="2" fill="#0e2010"/><ellipse cx="35" cy="34" rx="16" ry="11" fill="rgba(255,255,255,0.06)"/>
+  <!-- inner art border (for normal/holo) -->
+  <rect x="8" y="18" width="54" height="32" rx="2" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="0.5"/>
+  <!-- evo info line -->
+  <rect x="4" y="52" width="62" height="4" rx="1" fill="#7a9868" opacity="0.2"/>
+  <text x="35" y="55.2" text-anchor="middle" font-size="2.8" fill="#555" font-family="sans-serif">Weakness: ×2  Resistance: —  Retreat: ●●</text>
+  <!-- attack 1 -->
+  <text x="6" y="62" font-size="3" fill="#222" font-family="sans-serif">⚡⚡  Thunderclap   60</text>
+  <text x="6" y="66.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Flip a coin. If heads, paralyzed.</text>
+  <!-- attack 2 -->
+  <text x="6" y="73" font-size="3" fill="#222" font-family="sans-serif">⚡⚡⚡  Storm Surge  120</text>
+  <text x="6" y="77.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Discard an energy from this Pokémon.</text>
+  <!-- divider -->
+  <line x1="4" y1="80" x2="66" y2="80" stroke="#7a9868" stroke-width="0.5" opacity="0.4"/>
+  <!-- weakness/resistance/retreat -->
+  <text x="6" y="85" font-size="2.8" fill="#444" font-family="sans-serif">Weakness ×2  Resistance —</text>
+  <text x="6" y="89" font-size="2.8" fill="#444" font-family="sans-serif">Retreat Cost: ●●</text>
+  <!-- rarity symbol -->
+  <text x="62" y="95" text-anchor="end" font-size="7" fill="#555">●</text>
+  <!-- set number -->
+  <text x="6" y="97" font-size="2.8" fill="#888" font-family="sans-serif">042/198 · SV06</text>
+  
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Common ●</div>
+            <div class="rarity-treatment">Circle symbol. No foil. The bulk of every set. Trainers, basic energy, and base-tier Pokémon.</div>
+            <span class="rarity-odds">~6 of 10 slots</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-poke-uncommon">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  
+  <!-- card body -->
+  <rect width="70" height="100" rx="5" fill="#6878a8"/>
+  <rect x="2.5" y="2.5" width="65" height="95" rx="4" fill="#f5f0e8"/>
+  <!-- header bar -->
+  <rect x="4" y="4" width="62" height="12" rx="2" fill="#6878a8" opacity="0.85"/>
+  <!-- stage badge -->
+  <rect x="5" y="5.5" width="16" height="9" rx="1.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="13" y="12" text-anchor="middle" font-size="4" fill="#fff" font-weight="bold">BASIC</text>
+  <!-- pokemon name -->
+  <text x="23" y="12.5" font-size="6" fill="#fff" font-family="sans-serif" font-weight="bold" letter-spacing="-0.2">Drakon</text>
+  <!-- HP -->
+  <text x="56" y="12" font-size="4.5" fill="#333" font-family="sans-serif" font-weight="bold" text-anchor="middle">200 HP</text>
+  <!-- type symbol -->
+  <circle cx="66" cy="10" r="4.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="66" y="12.5" text-anchor="middle" font-size="5.5" fill="#fff">⚡</text>
+  <!-- art box -->
+  <rect x="8" y="18" width="54" height="32" rx="2" fill="#0a1428"/><ellipse cx="35" cy="34" rx="16" ry="11" fill="rgba(255,255,255,0.06)"/>
+  <!-- inner art border (for normal/holo) -->
+  <rect x="8" y="18" width="54" height="32" rx="2" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="0.5"/>
+  <!-- evo info line -->
+  <rect x="4" y="52" width="62" height="4" rx="1" fill="#6878a8" opacity="0.2"/>
+  <text x="35" y="55.2" text-anchor="middle" font-size="2.8" fill="#555" font-family="sans-serif">Weakness: ×2  Resistance: —  Retreat: ●●</text>
+  <!-- attack 1 -->
+  <text x="6" y="62" font-size="3" fill="#222" font-family="sans-serif">⚡⚡  Thunderclap   60</text>
+  <text x="6" y="66.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Flip a coin. If heads, paralyzed.</text>
+  <!-- attack 2 -->
+  <text x="6" y="73" font-size="3" fill="#222" font-family="sans-serif">⚡⚡⚡  Storm Surge  120</text>
+  <text x="6" y="77.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Discard an energy from this Pokémon.</text>
+  <!-- divider -->
+  <line x1="4" y1="80" x2="66" y2="80" stroke="#6878a8" stroke-width="0.5" opacity="0.4"/>
+  <!-- weakness/resistance/retreat -->
+  <text x="6" y="85" font-size="2.8" fill="#444" font-family="sans-serif">Weakness ×2  Resistance —</text>
+  <text x="6" y="89" font-size="2.8" fill="#444" font-family="sans-serif">Retreat Cost: ●●</text>
+  <!-- rarity symbol -->
+  <text x="62" y="95" text-anchor="end" font-size="7" fill="#6878a8">◆</text>
+  <!-- set number -->
+  <text x="6" y="97" font-size="2.8" fill="#888" font-family="sans-serif">042/198 · SV06</text>
+  
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Uncommon ◆</div>
+            <div class="rarity-treatment">Diamond symbol. Stage 1 evolutions, key trainers. Still no foil on the card face.</div>
+            <span class="rarity-odds">~3 of 10 slots</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-poke-rare">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  
+  <!-- card body -->
+  <rect width="70" height="100" rx="5" fill="#c89030"/>
+  <rect x="2.5" y="2.5" width="65" height="95" rx="4" fill="#f5f0e8"/>
+  <!-- header bar -->
+  <rect x="4" y="4" width="62" height="12" rx="2" fill="#c89030" opacity="0.85"/>
+  <!-- stage badge -->
+  <rect x="5" y="5.5" width="16" height="9" rx="1.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="13" y="12" text-anchor="middle" font-size="4" fill="#fff" font-weight="bold">BASIC</text>
+  <!-- pokemon name -->
+  <text x="23" y="12.5" font-size="6" fill="#fff" font-family="sans-serif" font-weight="bold" letter-spacing="-0.2">Drakon</text>
+  <!-- HP -->
+  <text x="56" y="12" font-size="4.5" fill="#222" font-family="sans-serif" font-weight="bold" text-anchor="middle">200 HP</text>
+  <!-- type symbol -->
+  <circle cx="66" cy="10" r="4.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="66" y="12.5" text-anchor="middle" font-size="5.5" fill="#fff">⚡</text>
+  <!-- art box -->
+  <rect x="8" y="18" width="54" height="32" rx="2" fill="#1a1000"/><ellipse cx="35" cy="34" rx="16" ry="11" fill="rgba(255,255,255,0.06)"/>
+  <!-- inner art border (for normal/holo) -->
+  <rect x="8" y="18" width="54" height="32" rx="2" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="0.5"/>
+  <!-- evo info line -->
+  <rect x="4" y="52" width="62" height="4" rx="1" fill="#c89030" opacity="0.2"/>
+  <text x="35" y="55.2" text-anchor="middle" font-size="2.8" fill="#555" font-family="sans-serif">Weakness: ×2  Resistance: —  Retreat: ●●</text>
+  <!-- attack 1 -->
+  <text x="6" y="62" font-size="3" fill="#222" font-family="sans-serif">⚡⚡  Thunderclap   60</text>
+  <text x="6" y="66.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Flip a coin. If heads, paralyzed.</text>
+  <!-- attack 2 -->
+  <text x="6" y="73" font-size="3" fill="#222" font-family="sans-serif">⚡⚡⚡  Storm Surge  120</text>
+  <text x="6" y="77.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Discard an energy from this Pokémon.</text>
+  <!-- divider -->
+  <line x1="4" y1="80" x2="66" y2="80" stroke="#c89030" stroke-width="0.5" opacity="0.4"/>
+  <!-- weakness/resistance/retreat -->
+  <text x="6" y="85" font-size="2.8" fill="#444" font-family="sans-serif">Weakness ×2  Resistance —</text>
+  <text x="6" y="89" font-size="2.8" fill="#444" font-family="sans-serif">Retreat Cost: ●●</text>
+  <!-- rarity symbol -->
+  <text x="62" y="95" text-anchor="end" font-size="7" fill="#c89030">★</text>
+  <!-- set number -->
+  <text x="6" y="97" font-size="2.8" fill="#888" font-family="sans-serif">042/198 · SV06</text>
+  
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Rare ★</div>
+            <div class="rarity-treatment">Star symbol. Basic holo or non-holo. Stage 2 evolutions and mid-tier competitive options.</div>
+            <span class="rarity-odds">~1 of 10 slots</span>
+          </div>
+        </div>
+
+      </div>
+
+      <p class="section-heading" style="margin-top:1rem">Modern Hit Slots — Scarlet & Violet Era</p>
+      <div class="rarity-grid">
+
+        <div class="rarity-card">
+          <div class="card-preview foil-poke-holo">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  
+  <!-- card body -->
+  <rect width="70" height="100" rx="5" fill="#3060b0"/>
+  <rect x="2.5" y="2.5" width="65" height="95" rx="4" fill="#f5f0e8"/>
+  <!-- header bar -->
+  <rect x="4" y="4" width="62" height="12" rx="2" fill="#3060b0" opacity="0.85"/>
+  <!-- stage badge -->
+  <rect x="5" y="5.5" width="16" height="9" rx="1.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="13" y="12" text-anchor="middle" font-size="4" fill="#fff" font-weight="bold">BASIC</text>
+  <!-- pokemon name -->
+  <text x="23" y="12.5" font-size="6" fill="#fff" font-family="sans-serif" font-weight="bold" letter-spacing="-0.2">Drakon</text>
+  <!-- HP -->
+  <text x="56" y="12" font-size="4.5" fill="#c00" font-family="sans-serif" font-weight="bold" text-anchor="middle">200 HP</text>
+  <!-- type symbol -->
+  <circle cx="66" cy="10" r="4.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="66" y="12.5" text-anchor="middle" font-size="5.5" fill="#fff">⚡</text>
+  <!-- art box -->
+  <rect x="8" y="18" width="54" height="32" rx="2" fill="#0a1a40"/><ellipse cx="35" cy="34" rx="16" ry="11" fill="rgba(255,255,255,0.06)"/>
+  <!-- inner art border (for normal/holo) -->
+  <rect x="8" y="18" width="54" height="32" rx="2" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="0.5"/>
+  <!-- evo info line -->
+  <rect x="4" y="52" width="62" height="4" rx="1" fill="#3060b0" opacity="0.2"/>
+  <text x="35" y="55.2" text-anchor="middle" font-size="2.8" fill="#555" font-family="sans-serif">Weakness: ×2  Resistance: —  Retreat: ●●</text>
+  <!-- attack 1 -->
+  <text x="6" y="62" font-size="3" fill="#222" font-family="sans-serif">⚡⚡  Thunderclap   60</text>
+  <text x="6" y="66.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Flip a coin. If heads, paralyzed.</text>
+  <!-- attack 2 -->
+  <text x="6" y="73" font-size="3" fill="#222" font-family="sans-serif">⚡⚡⚡  Storm Surge  120</text>
+  <text x="6" y="77.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Discard an energy from this Pokémon.</text>
+  <!-- divider -->
+  <line x1="4" y1="80" x2="66" y2="80" stroke="#3060b0" stroke-width="0.5" opacity="0.4"/>
+  <!-- weakness/resistance/retreat -->
+  <text x="6" y="85" font-size="2.8" fill="#444" font-family="sans-serif">Weakness ×2  Resistance —</text>
+  <text x="6" y="89" font-size="2.8" fill="#444" font-family="sans-serif">Retreat Cost: ●●</text>
+  <!-- rarity symbol -->
+  <text x="62" y="95" text-anchor="end" font-size="7" fill="#3060b0">★</text>
+  <!-- set number -->
+  <text x="6" y="97" font-size="2.8" fill="#888" font-family="sans-serif">042/198 · SV06</text>
+  
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Holo Rare / Double Rare (ex)</div>
+            <div class="rarity-treatment">Holo pattern in the art window. Double Rare applies to all ex-mechanic cards — the standard "pull" in modern sets.</div>
+            <span class="rarity-odds">~1 in 3 packs</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-poke-rholo">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  
+  <!-- card body -->
+  <rect width="70" height="100" rx="5" fill="#6848a8"/>
+  <rect x="2.5" y="2.5" width="65" height="95" rx="4" fill="#f5f0e8"/>
+  <!-- header bar -->
+  <rect x="4" y="4" width="62" height="12" rx="2" fill="#6848a8" opacity="0.85"/>
+  <!-- stage badge -->
+  <rect x="5" y="5.5" width="16" height="9" rx="1.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="13" y="12" text-anchor="middle" font-size="4" fill="#fff" font-weight="bold">BASIC</text>
+  <!-- pokemon name -->
+  <text x="23" y="12.5" font-size="6" fill="#fff" font-family="sans-serif" font-weight="bold" letter-spacing="-0.2">Drakon</text>
+  <!-- HP -->
+  <text x="56" y="12" font-size="4.5" fill="#c00" font-family="sans-serif" font-weight="bold" text-anchor="middle">200 HP</text>
+  <!-- type symbol -->
+  <circle cx="66" cy="10" r="4.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="66" y="12.5" text-anchor="middle" font-size="5.5" fill="#fff">⚡</text>
+  <!-- art box -->
+  <rect x="8" y="18" width="54" height="32" rx="2" fill="#0a1420"/><ellipse cx="35" cy="34" rx="18" ry="12" fill="#0a0e1e" opacity="0.6"/>
+  <!-- inner art border (for normal/holo) -->
+  <rect x="8" y="18" width="54" height="32" rx="2" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="0.5"/>
+  <!-- evo info line -->
+  <rect x="4" y="52" width="62" height="4" rx="1" fill="#6848a8" opacity="0.2"/>
+  <text x="35" y="55.2" text-anchor="middle" font-size="2.8" fill="#555" font-family="sans-serif">Weakness: ×2  Resistance: —  Retreat: ●●</text>
+  <!-- attack 1 -->
+  <text x="6" y="62" font-size="3" fill="#222" font-family="sans-serif">⚡⚡  Thunderclap   60</text>
+  <text x="6" y="66.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Flip a coin. If heads, paralyzed.</text>
+  <!-- attack 2 -->
+  <text x="6" y="73" font-size="3" fill="#222" font-family="sans-serif">⚡⚡⚡  Storm Surge  120</text>
+  <text x="6" y="77.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Discard an energy from this Pokémon.</text>
+  <!-- divider -->
+  <line x1="4" y1="80" x2="66" y2="80" stroke="#6848a8" stroke-width="0.5" opacity="0.4"/>
+  <!-- weakness/resistance/retreat -->
+  <text x="6" y="85" font-size="2.8" fill="#444" font-family="sans-serif">Weakness ×2  Resistance —</text>
+  <text x="6" y="89" font-size="2.8" fill="#444" font-family="sans-serif">Retreat Cost: ●●</text>
+  <!-- rarity symbol -->
+  <text x="62" y="95" text-anchor="end" font-size="7" fill="#6848a8">★</text>
+  <!-- set number -->
+  <text x="6" y="97" font-size="2.8" fill="#888" font-family="sans-serif">042/198 · SV06</text>
+  
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Reverse Holo</div>
+            <div class="rarity-treatment">Holo foil applied to everything outside the art window (border, text box, energy cost). Every single pack contains exactly one.</div>
+            <span class="rarity-odds">1 per pack (guaranteed)</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-poke-ir">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  
+  <!-- card body -->
+  <rect width="70" height="100" rx="5" fill="#2858a0"/>
+  <rect x="2.5" y="2.5" width="65" height="95" rx="4" fill="#f5f0e8"/>
+  <!-- header bar -->
+  <rect x="4" y="4" width="62" height="12" rx="2" fill="#2858a0" opacity="0.85"/>
+  <!-- stage badge -->
+  <rect x="5" y="5.5" width="16" height="9" rx="1.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="13" y="12" text-anchor="middle" font-size="4" fill="#fff" font-weight="bold">BASIC</text>
+  <!-- pokemon name -->
+  <text x="23" y="12.5" font-size="6" fill="#fff" font-family="sans-serif" font-weight="bold" letter-spacing="-0.2">Drakon</text>
+  <!-- HP -->
+  <text x="56" y="12" font-size="4.5" fill="#c00" font-family="sans-serif" font-weight="bold" text-anchor="middle">200 HP</text>
+  <!-- type symbol -->
+  <circle cx="66" cy="10" r="4.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="66" y="12.5" text-anchor="middle" font-size="5.5" fill="#fff">⚡</text>
+  <!-- art box -->
+  <rect x="4" y="16" width="62" height="38" fill="#082040" opacity="0.8"/><ellipse cx="35" cy="35" rx="22" ry="16" fill="#082040" opacity="0.5"/>
+  <!-- inner art border (for normal/holo) -->
+  
+  <!-- evo info line -->
+  <rect x="4" y="52" width="62" height="4" rx="1" fill="#2858a0" opacity="0.2"/>
+  <text x="35" y="55.2" text-anchor="middle" font-size="2.8" fill="#555" font-family="sans-serif">Weakness: ×2  Resistance: —  Retreat: ●●</text>
+  <!-- attack 1 -->
+  <text x="6" y="62" font-size="3" fill="#222" font-family="sans-serif">⚡⚡  Thunderclap   60</text>
+  <text x="6" y="66.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Flip a coin. If heads, paralyzed.</text>
+  <!-- attack 2 -->
+  <text x="6" y="73" font-size="3" fill="#222" font-family="sans-serif">⚡⚡⚡  Storm Surge  120</text>
+  <text x="6" y="77.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Discard an energy from this Pokémon.</text>
+  <!-- divider -->
+  <line x1="4" y1="80" x2="66" y2="80" stroke="#2858a0" stroke-width="0.5" opacity="0.4"/>
+  <!-- weakness/resistance/retreat -->
+  <text x="6" y="85" font-size="2.8" fill="#444" font-family="sans-serif">Weakness ×2  Resistance —</text>
+  <text x="6" y="89" font-size="2.8" fill="#444" font-family="sans-serif">Retreat Cost: ●●</text>
+  <!-- rarity symbol -->
+  <text x="62" y="95" text-anchor="end" font-size="7" fill="#4090d0">✦</text>
+  <!-- set number -->
+  <text x="6" y="97" font-size="2.8" fill="#888" font-family="sans-serif">042/198 · SV06</text>
+  
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Illustration Rare (IR)</div>
+            <div class="rarity-treatment">Art bleeds past the inner frame border into the text box area. A scene rather than a portrait. The "entry-level" art chase card.</div>
+            <span class="rarity-odds">~1 in 18 packs</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-poke-sir">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <defs><linearGradient id="sirGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#180828"/><stop offset="100%" stop-color="#082818"/></linearGradient></defs>
+  <!-- card body -->
+  <rect width="70" height="100" rx="5" fill="#5828a8"/>
+  <rect x="2.5" y="2.5" width="65" height="95" rx="4" fill="#f5f0e8"/>
+  <!-- header bar -->
+  <rect x="4" y="4" width="62" height="12" rx="2" fill="#5828a8" opacity="0.85"/>
+  <!-- stage badge -->
+  <rect x="5" y="5.5" width="16" height="9" rx="1.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="13" y="12" text-anchor="middle" font-size="4" fill="#fff" font-weight="bold">BASIC</text>
+  <!-- pokemon name -->
+  <text x="23" y="12.5" font-size="6" fill="#fff" font-family="sans-serif" font-weight="bold" letter-spacing="-0.2">Drakon</text>
+  <!-- HP -->
+  <text x="56" y="12" font-size="4.5" fill="#c00" font-family="sans-serif" font-weight="bold" text-anchor="middle">200 HP</text>
+  <!-- type symbol -->
+  <circle cx="66" cy="10" r="4.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="66" y="12.5" text-anchor="middle" font-size="5.5" fill="#fff">⚡</text>
+  <!-- art box -->
+  <rect x="4" y="12" width="62" height="50" fill="#120828"/><rect x="4" y="12" width="62" height="50" fill="url(#sirGrad)" opacity="0.6"/>
+  <!-- inner art border (for normal/holo) -->
+  
+  <!-- evo info line -->
+  <rect x="4" y="52" width="62" height="4" rx="1" fill="#5828a8" opacity="0.2"/>
+  <text x="35" y="55.2" text-anchor="middle" font-size="2.8" fill="#555" font-family="sans-serif">Weakness: ×2  Resistance: —  Retreat: ●●</text>
+  <!-- attack 1 -->
+  <text x="6" y="62" font-size="3" fill="#222" font-family="sans-serif">⚡⚡  Thunderclap   60</text>
+  <text x="6" y="66.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Flip a coin. If heads, paralyzed.</text>
+  <!-- attack 2 -->
+  <text x="6" y="73" font-size="3" fill="#222" font-family="sans-serif">⚡⚡⚡  Storm Surge  120</text>
+  <text x="6" y="77.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Discard an energy from this Pokémon.</text>
+  <!-- divider -->
+  <line x1="4" y1="80" x2="66" y2="80" stroke="#5828a8" stroke-width="0.5" opacity="0.4"/>
+  <!-- weakness/resistance/retreat -->
+  <text x="6" y="85" font-size="2.8" fill="#444" font-family="sans-serif">Weakness ×2  Resistance —</text>
+  <text x="6" y="89" font-size="2.8" fill="#444" font-family="sans-serif">Retreat Cost: ●●</text>
+  <!-- rarity symbol -->
+  <text x="62" y="95" text-anchor="end" font-size="7" fill="#a060f0">✦✦</text>
+  <!-- set number -->
+  <text x="6" y="97" font-size="2.8" fill="#888" font-family="sans-serif">042/198 · SV06</text>
+  
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Special Illustration Rare (SIR)</div>
+            <div class="rarity-treatment">Full illustrated background wrapping the Pokémon into a scene. The card border disappears. Drives the modern collector market — same gameplay as Double Rare.</div>
+            <span class="rarity-odds">~1 in 50–80 packs</span>
+          </div>
+        </div>
+
+        <div class="rarity-card">
+          <div class="card-preview foil-poke-hyper">
+            <svg viewBox="0 0 70 100" width="240" height="342" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))">
+  <defs><linearGradient id="hyperGold" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#d4a017"/><stop offset="50%" stop-color="#f0d060"/><stop offset="100%" stop-color="#d4a017"/></linearGradient></defs>
+  <!-- card body -->
+  <rect width="70" height="100" rx="5" fill="#c89030"/>
+  <rect x="2.5" y="2.5" width="65" height="95" rx="4" fill="#f5f0e8"/>
+  <!-- header bar -->
+  <rect x="4" y="4" width="62" height="12" rx="2" fill="#c89030" opacity="0.85"/>
+  <!-- stage badge -->
+  <rect x="5" y="5.5" width="16" height="9" rx="1.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="13" y="12" text-anchor="middle" font-size="4" fill="#fff" font-weight="bold">BASIC</text>
+  <!-- pokemon name -->
+  <text x="23" y="12.5" font-size="6" fill="#fff" font-family="sans-serif" font-weight="bold" letter-spacing="-0.2">Drakon</text>
+  <!-- HP -->
+  <text x="56" y="12" font-size="4.5" fill="#8a4000" font-family="sans-serif" font-weight="bold" text-anchor="middle">200 HP</text>
+  <!-- type symbol -->
+  <circle cx="66" cy="10" r="4.5" fill="rgba(0,0,0,0.3)"/>
+  <text x="66" y="12.5" text-anchor="middle" font-size="5.5" fill="#fff">⚡</text>
+  <!-- art box -->
+  <rect x="8" y="18" width="54" height="32" rx="2" fill="#302000"/><rect x="8" y="18" width="54" height="32" rx="2" fill="url(#hyperGold)" opacity="0.8"/>
+  <!-- inner art border (for normal/holo) -->
+  <rect x="8" y="18" width="54" height="32" rx="2" fill="none" stroke="rgba(0,0,0,0.12)" stroke-width="0.5"/>
+  <!-- evo info line -->
+  <rect x="4" y="52" width="62" height="4" rx="1" fill="#c89030" opacity="0.2"/>
+  <text x="35" y="55.2" text-anchor="middle" font-size="2.8" fill="#555" font-family="sans-serif">Weakness: ×2  Resistance: —  Retreat: ●●</text>
+  <!-- attack 1 -->
+  <text x="6" y="62" font-size="3" fill="#222" font-family="sans-serif">⚡⚡  Thunderclap   60</text>
+  <text x="6" y="66.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Flip a coin. If heads, paralyzed.</text>
+  <!-- attack 2 -->
+  <text x="6" y="73" font-size="3" fill="#222" font-family="sans-serif">⚡⚡⚡  Storm Surge  120</text>
+  <text x="6" y="77.5" font-size="2.8" fill="#666" font-family="sans-serif" font-style="italic">Discard an energy from this Pokémon.</text>
+  <!-- divider -->
+  <line x1="4" y1="80" x2="66" y2="80" stroke="#c89030" stroke-width="0.5" opacity="0.4"/>
+  <!-- weakness/resistance/retreat -->
+  <text x="6" y="85" font-size="2.8" fill="#444" font-family="sans-serif">Weakness ×2  Resistance —</text>
+  <text x="6" y="89" font-size="2.8" fill="#444" font-family="sans-serif">Retreat Cost: ●●</text>
+  <!-- rarity symbol -->
+  <text x="62" y="95" text-anchor="end" font-size="7" fill="#d4a017">✦✦✦</text>
+  <!-- set number -->
+  <text x="6" y="97" font-size="2.8" fill="#888" font-family="sans-serif">042/198 · SV06</text>
+  <rect x="4" y="4" width="62" height="92" rx="4" fill="url(#hyperGold)" opacity="0.15"/>
+</svg>
+          </div>
+          <div class="rarity-info-box">
+            <div class="rarity-name">Hyper Rare / ACE SPEC</div>
+            <div class="rarity-treatment">The entire card — art, frame, text, energy symbols — printed in gold foil. One ACE SPEC is guaranteed per booster box (36 packs).</div>
+            <span class="rarity-odds">~1 in 70–100 packs</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="pack-section">
+      <p class="section-heading">Pack Anatomy — 10 Cards</p>
+      <div class="pack-visual">
+        <div class="pack-bar-label">Standard slot distribution</div>
+        <div class="pack-bar">
+          <div class="pack-seg seg-pc" style="flex:6">6× Common</div>
+          <div class="pack-seg seg-pu" style="flex:3">3× Uncommon</div>
+          <div class="pack-seg seg-rh" style="flex:1">Rev. Holo</div>
+        </div>
+        <div class="pack-bar-label" style="margin-top:.8rem">With hit slot (~1 in 3 packs)</div>
+        <div class="pack-bar">
+          <div class="pack-seg seg-pc" style="flex:5">5× Common</div>
+          <div class="pack-seg seg-pu" style="flex:3">3× Uncommon</div>
+          <div class="pack-seg seg-rh" style="flex:1">Rev.</div>
+          <div class="pack-seg seg-hit" style="flex:1">HIT</div>
+        </div>
+        <div class="pack-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#1a1410"></div>6 Commons</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#0e1a10"></div>3 Uncommons</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#100f1c"></div>1 Reverse Holo (guaranteed)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#1a0820"></div>~33% chance hit slot (IR / SIR / Hyper)</div>
+        </div>
+        <div class="insight">
+          <strong>Design Insight</strong>
+          Pokémon's genius move in the modern era was decoupling collector value from competitive value entirely. An SIR Charizard ex and a Double Rare Charizard ex are the same card in a tournament — but worlds apart in a binder. This lets the game serve both audiences without compromising either. The guaranteed reverse holo ensures every pack opener walks away with something shiny, dramatically reducing buyer regret at the point of sale.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ PAYBACK ═══════════════════ -->
+  <div class="panel" id="panel-payback">
+    <div class="game-hero">
+      <div class="game-meta">
+        <div class="game-info">
+          <p class="game-eyebrow">Great Guy Games LLC · 2–6 Players · Ages 7+ · 58-card base deck · 12-card expansions</p>
+          <h2 class="game-title">Payback Card Game</h2>
+          <p class="game-desc">Payback is a competitive card-shedding game for 2–6 players. Each player starts with 9 cards: 3 face-down (never peeked), 3 face-up on top of them, and 3 in hand. The goal is to get rid of all your cards across three phases — hand cards first, then face-up, then the blind face-down flip. Play equal or higher to the pile, or unleash one of 5 special cards (Ghost, Skip, Mirror, Reset, Burn) at any time. Four-of-a-kind burns the pile and resets play. If you can't beat the pile, you pick it up. First out wins; last player standing loses. The 12-card Dark Wizard expansion adds spell cards that run in parallel — cast before your turn to sabotage rivals, bend the rules, or pull off impossible comebacks. Because Payback sells complete decks and complete expansion sets with no randomness, "rarity" here is about premium edition variants, visual treatments, and numbered print runs — not pull rates.</p>
+        </div>
+        <div class="stat-cluster">
+          <div class="stat-box">
+            <div class="stat-number">58</div>
+            <div class="stat-label">Base deck cards</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">12</div>
+            <div class="stat-label">Cards per expansion</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">5</div>
+            <div class="stat-label">Special card types</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-content">
+      <p class="section-heading">Choose a Rarity System for Payback</p>
+
+      <div class="option-tabs">
+        <button class="opt-btn active" onclick="showOption('foil-deck')">Option A — Foil Deck Variants</button>
+        <button class="opt-btn" onclick="showOption('chase-insert')">Option B — Chase Inserts</button>
+        <button class="opt-btn" onclick="showOption('expansion-tiers')">Option C — Expansion Tiers</button>
+      </div>
+
+      <!-- ── OPTION A: Foil Deck Variants ── -->
+      <div class="option-panel active" id="opt-foil-deck">
+        <div class="option-badge">Option A</div>
+        <div class="option-title">The Foil Deck Model</div>
+        <p class="option-desc">You sell the base game in two physical versions — Standard and Foil Edition. Every expansion (all 12 cards) automatically ships with a premium foil treatment — buyers always get the complete set. Simple, no randomness, easy to manufacture. You're already doing a version of this with Original / Degen / Gold.</p>
+
+        <div class="rarity-grid">
+          <div class="rarity-card">
+            <div class="card-preview foil-pb-standard">
+              <div class="card-icon pb-style">🃏</div>
+            </div>
+            <div class="rarity-info-box">
+              <div class="rarity-name">Standard Deck</div>
+              <div class="rarity-treatment">All 58 cards in flat print. The baseline product sold at standard price. No foil anywhere.</div>
+              <span class="rarity-odds">Base SKU</span>
+            </div>
+          </div>
+
+          <div class="rarity-card">
+            <div class="card-preview foil-pb-foil">
+              <div class="card-icon pb-style">✦</div>
+            </div>
+            <div class="rarity-info-box">
+              <div class="rarity-name">Foil Edition Deck</div>
+              <div class="rarity-treatment">All 58 cards printed with full-card teal foil. Sold at a premium ($10–15 above Standard). Same gameplay — different feel entirely.</div>
+              <span class="rarity-odds">Premium SKU ~+$12</span>
+            </div>
+          </div>
+
+          <div class="rarity-card">
+            <div class="card-preview foil-pb-expansion">
+              <div class="card-icon pb-style">⚡</div>
+            </div>
+            <div class="rarity-info-box">
+              <div class="rarity-name">Expansion Card (always foil)</div>
+              <div class="rarity-treatment">All 12 cards in any expansion ship with a special holographic treatment — never in flat print. The expansion format naturally elevates them above base deck cards.</div>
+              <span class="rarity-odds">Included in expansion pack</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pack-visual">
+          <div class="pack-bar-label">Product line structure</div>
+          <div class="pack-bar">
+            <div class="pack-seg seg-pbs" style="flex:3">Standard Deck</div>
+            <div class="pack-seg seg-pbf" style="flex:3">Foil Edition</div>
+            <div class="pack-seg seg-pbx" style="flex:2">Expansion (12 cards)</div>
+          </div>
+          <div class="pack-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#0a1410"></div>Standard: 58 flat cards</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#081410"></div>Foil Edition: 58 full-foil cards</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#08101a"></div>Expansion: all 12 cards, always holo</div>
+          </div>
+          <div class="verdict-row">
+            <div class="verdict-box verdict-pro">
+              <span class="verdict-label">Advantages</span>
+              <p>Zero randomness — customers know exactly what they're buying. Simple SKU structure. Easy to manufacture (just two print runs per base set). Works perfectly with your current Gold Edition model. Expansions feel inherently special.</p>
+            </div>
+            <div class="verdict-box verdict-con">
+              <span class="verdict-label">Tradeoffs</span>
+              <p>No per-card collectibility — you can't chase a specific card. Limited secondary market. Once someone owns the Foil Edition, there's no next tier to want. Doesn't create the "opening experience" excitement.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── OPTION B: Within-Expansion Treatment Split ── -->
+      <div class="option-panel" id="opt-chase-insert">
+        <div class="option-badge">Option B</div>
+        <div class="option-title">The Within-Expansion Split</div>
+        <p class="option-desc">The base deck stays fully standard. Inside each 12-card expansion, cards are printed at two treatment levels — most are standard, but a designated subset (the mechanic cards, wildcards, or thematic "anchors") ship in foil. Every buyer gets all 12 cards and knows exactly what they're getting. Rarity is built into the expansion's internal structure.</p>
+
+        <div class="rarity-grid">
+          <div class="rarity-card">
+            <div class="card-preview foil-pb-standard">
+              <div class="card-icon pb-style">🃏</div>
+            </div>
+            <div class="rarity-info-box">
+              <div class="rarity-name">Base Deck</div>
+              <div class="rarity-treatment">All 58 cards standard. No treatment tiers in the base game — every player has the same deck.</div>
+              <span class="rarity-odds">All copies identical</span>
+            </div>
+          </div>
+
+          <div class="rarity-card">
+            <div class="card-preview foil-pb-standard">
+              <div class="card-icon pb-style">📋</div>
+            </div>
+            <div class="rarity-info-box">
+              <div class="rarity-name">Expansion — Standard Cards</div>
+              <div class="rarity-treatment">The bulk of the 12 expansion cards in flat print. Supporting cards, modifiers, and utility cards. Solid print, no foil.</div>
+              <span class="rarity-odds">~9 of 12 cards</span>
+            </div>
+          </div>
+
+          <div class="rarity-card">
+            <div class="card-preview foil-pb-foil">
+              <div class="card-icon pb-style">✦</div>
+            </div>
+            <div class="rarity-info-box">
+              <div class="rarity-name">Expansion — Foil Cards</div>
+              <div class="rarity-treatment">The 2–3 "anchor" cards of the expansion — the mechanic card, the namesake card, or the most powerful — ship in full foil. Every buyer receives these foil cards guaranteed.</div>
+              <span class="rarity-odds">~3 of 12 cards</span>
+            </div>
+          </div>
+
+          <div class="rarity-card">
+            <div class="card-preview foil-pb-numbered">
+              <div class="card-icon pb-style">📜</div>
+              <div class="number-stamp">#088 / 500</div>
+            </div>
+            <div class="rarity-info-box">
+              <div class="rarity-name">Collector Edition</div>
+              <div class="rarity-treatment">A numbered edition of the full expansion where all 12 cards are printed in foil. Limited print run per expansion (e.g., /500). Sold as a premium SKU alongside the standard expansion.</div>
+              <span class="rarity-odds">Limited run, e.g. /500</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pack-visual">
+          <div class="pack-bar-label">What's inside every expansion?</div>
+          <div class="pack-bar">
+            <div class="pack-seg seg-pbs" style="flex:9">9 Standard cards</div>
+            <div class="pack-seg seg-pbf" style="flex:3">3 Foil cards</div>
+          </div>
+          <div class="pack-bar-label" style="margin-top:.8rem">Collector Edition</div>
+          <div class="pack-bar">
+            <div class="pack-seg seg-pbf" style="flex:12">All 12 cards in foil — numbered edition</div>
+          </div>
+          <div class="pack-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#0a1410"></div>9 standard cards (all expansion copies)</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#081410"></div>3 foil anchor cards (all expansion copies)</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#100818"></div>Collector Edition: all 12 in foil, numbered</div>
+          </div>
+          <div class="verdict-row">
+            <div class="verdict-box verdict-pro">
+              <span class="verdict-label">Advantages</span>
+              <p>Zero randomness — buyers know the exact treatment of every card before purchasing. Creates a visual hierarchy within the expansion itself that signals which cards are most important. The foil anchor cards become iconic at the table. Collector Edition creates a premium tier without requiring a separate product line.</p>
+            </div>
+            <div class="verdict-box verdict-con">
+              <span class="verdict-label">Tradeoffs</span>
+              <p>Requires deciding which 3 cards are "anchor" cards per expansion — a design decision, not just a manufacturing one. Two print specs per expansion (foil + standard) adds manufacturing complexity. Collector Edition needs a separate numbered print run coordination with Flydragon.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── OPTION C: Expansion Tiers ── -->
+      <div class="option-panel" id="opt-expansion-tiers">
+        <div class="option-badge">Option C</div>
+        <div class="option-title">The Expansion Tier Model</div>
+        <p class="option-desc">Keep the base game fully standardized. Build a treatment tier system entirely around expansions — each of the 12 cards ships in the same edition, but you offer Standard, Foil, and Gold Numbered versions of the complete expansion. Buyers choose their tier upfront. The base game stays clean; the collector market lives in the expansions.</p>
+
+        <div class="rarity-grid">
+          <div class="rarity-card">
+            <div class="card-preview foil-pb-standard">
+              <div class="card-icon pb-style">🃏</div>
+            </div>
+            <div class="rarity-info-box">
+              <div class="rarity-name">Base Deck (Unchanged)</div>
+              <div class="rarity-treatment">All 58 cards standard. No rarity tiers in the base game. Clean and simple. Every player is equal at the table.</div>
+              <span class="rarity-odds">All copies identical</span>
+            </div>
+          </div>
+
+          <div class="rarity-card">
+            <div class="card-preview foil-pb-expansion">
+              <div class="card-icon pb-style">⚡</div>
+            </div>
+            <div class="rarity-info-box">
+              <div class="rarity-name">Expansion — Standard</div>
+              <div class="rarity-treatment">All 12 expansion cards in flat print. The standard purchase — complete and fully playable. Same cards, same gameplay as every other tier.</div>
+              <span class="rarity-odds">Included in every expansion</span>
+            </div>
+          </div>
+
+          <div class="rarity-card">
+            <div class="card-preview foil-pb-foil">
+              <div class="card-icon pb-style">✦</div>
+            </div>
+            <div class="rarity-info-box">
+              <div class="rarity-name">Expansion — Foil Upgrade</div>
+              <div class="rarity-treatment">The same 12 expansion cards in full teal foil. Sold as a separate "Collector Edition" SKU at a premium. Exact same cards, premium treatment — buyer chooses this tier at checkout.</div>
+              <span class="rarity-odds">Optional add-on ~+$8</span>
+            </div>
+          </div>
+
+          <div class="rarity-card">
+            <div class="card-preview foil-pb-gold">
+              <div class="card-icon pb-style">👑</div>
+              <div class="gold-stamp">#012 / 200</div>
+            </div>
+            <div class="rarity-info-box">
+              <div class="rarity-name">Expansion — Gold Numbered</div>
+              <div class="rarity-treatment">A numbered foil edition of the complete 12-card expansion, limited to 200 copies per expansion launch. Every card in the set is stamped with the print number. The apex tier.</div>
+              <span class="rarity-odds">Limited to 200 per expansion</span>
+            </div>
+          </div>
+
+          <div class="rarity-card">
+            <div class="card-preview foil-pb-chase">
+              <div class="card-icon pb-style">🌟</div>
+            </div>
+            <div class="rarity-info-box">
+              <div class="rarity-name">Alternate Art</div>
+              <div class="rarity-treatment">A different illustration of one expansion card, featuring a commissioned artist. Separate design, same gameplay text. The ultimate collector variant — only exists for 1 card per expansion.</div>
+              <span class="rarity-odds">Kickstarter / Launch exclusive</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pack-visual">
+          <div class="pack-bar-label">Expansion product tiers</div>
+          <div class="pack-bar">
+            <div class="pack-seg seg-pbs" style="flex:4">Standard (12 cards)</div>
+            <div class="pack-seg seg-pbf" style="flex:3">Foil Bundle</div>
+            <div class="pack-seg seg-pbg" style="flex:2">Gold /200</div>
+            <div class="pack-seg seg-pbn" style="flex:1">Alt Art</div>
+          </div>
+          <div class="pack-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#0a1410"></div>Standard: every expansion copy</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#081410"></div>Foil Bundle: optional add-on tier</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#0f0c00"></div>Gold Numbered: 200 copies per launch</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#100818"></div>Alternate Art: 1 per expansion, exclusive</div>
+          </div>
+          <div class="verdict-row">
+            <div class="verdict-box verdict-pro">
+              <span class="verdict-label">Advantages</span>
+              <p>The base game stays 100% fair — no collector advantage bleeds into gameplay. Concentrates all collectibility in expansions where you can control print quantities precisely. The Gold /200 creates genuine scarcity events around each expansion launch. Works naturally with your Dark Wizard, NSFW, Mystery structure.</p>
+            </div>
+            <div class="verdict-box verdict-con">
+              <span class="verdict-label">Tradeoffs</span>
+              <p>Requires 3–4 SKUs per expansion instead of one. Buyers who want the Gold edition need to act fast (which is also a pro). The alternate art requires a commissioned illustration budget per expansion. More complex manufacturing coordination with Flydragon.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+function switchTab(game) {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.game === game);
+  });
+  document.querySelectorAll('.panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === 'panel-' + game);
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function showOption(id) {
+  document.querySelectorAll('.opt-btn').forEach((b,i) => {
+    const ids = ['foil-deck','chase-insert','expansion-tiers'];
+    b.classList.toggle('active', ids[i] === id);
+  });
+  document.querySelectorAll('.option-panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'opt-' + id);
+  });
+}
+</script>
+</body>
+</html>
