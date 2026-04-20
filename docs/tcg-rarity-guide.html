@@ -310,7 +310,7 @@
   #panel-payback .rarity-card:hover { border-color: rgba(0,200,160,0.35); }
 
   .card-preview {
-    width: 300px;
+    width: 580px;
     min-height: 390px;
     flex-shrink: 0;
     position: relative;
@@ -321,6 +321,69 @@
     background: rgba(0,0,0,0.25);
     border-left: 1px solid var(--border);
   }
+
+  .preview-pair {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .real-card-slot {
+    width: 240px;
+    height: 342px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.7);
+  }
+
+  .real-card-slot.loading::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(255,255,255,0.03) 0%,
+      rgba(255,255,255,0.09) 45%,
+      rgba(255,255,255,0.03) 100%
+    );
+    background-size: 200% 100%;
+    animation: holoShift 1.2s linear infinite;
+  }
+
+  .real-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    opacity: 0;
+    transition: opacity .2s ease;
+  }
+
+  .real-card-slot.loaded .real-card-img { opacity: 1; }
+  .real-card-slot.loaded::before { display: none; }
+
+  .real-card-status {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 12px;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: rgba(232,228,216,0.75);
+    background: radial-gradient(ellipse 80% 80% at 50% 40%, rgba(0,0,0,0.25), rgba(0,0,0,0.55));
+    pointer-events: none;
+  }
+
+  .real-card-slot.loaded .real-card-status { display: none; }
+  .real-card-slot.error .real-card-status { letter-spacing: .08em; text-transform: none; font-family: 'Crimson Pro', Georgia, serif; font-size: 14px; }
   .card-preview::before,
   .card-preview::after {
     position: absolute;
@@ -786,6 +849,7 @@
     .rarity-grid { grid-template-columns: 1fr; }
     .rarity-card { flex-direction: column; min-height: unset; }
     .card-preview { width: 100%; min-height: 390px; padding: 24px 16px; border-left: none; border-top: 1px solid var(--border); }
+    .preview-pair { flex-direction: column; }
     .rarity-info-box { padding: 1.4rem 1.5rem; }
   }
   /* ── PAYBACK ── */
@@ -2514,6 +2578,153 @@ function showOption(id) {
     p.classList.toggle('active', p.id === 'opt-' + id);
   });
 }
+
+function normalizeTierLabel(label) {
+  return String(label || '')
+    .replace(/[●◆★]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function fetchScryfallImage(cardName) {
+  const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Scryfall ${res.status}`);
+  const data = await res.json();
+  const img =
+    data?.image_uris?.normal ||
+    data?.image_uris?.large ||
+    data?.card_faces?.[0]?.image_uris?.normal ||
+    data?.card_faces?.[0]?.image_uris?.large;
+  if (!img) throw new Error('No image_uris');
+  return img;
+}
+
+async function fetchYgoProDeckImage(cardName) {
+  const url = `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`YGOPRODeck ${res.status}`);
+  const data = await res.json();
+  const img = data?.data?.[0]?.card_images?.[0]?.image_url;
+  if (!img) throw new Error('No card_images');
+  return img;
+}
+
+async function fetchPokemonTcgImage(cardName) {
+  const q = `name:"${cardName}"`;
+  const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&pageSize=1`;
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if (!res.ok) throw new Error(`PokemonTCG ${res.status}`);
+  const data = await res.json();
+  const img = data?.data?.[0]?.images?.large || data?.data?.[0]?.images?.small;
+  if (!img) throw new Error('No images');
+  return img;
+}
+
+function ensurePreviewPair(previewEl) {
+  const existing = previewEl.querySelector(':scope > .preview-pair');
+  if (existing) return existing;
+  const wrapper = document.createElement('div');
+  wrapper.className = 'preview-pair';
+  while (previewEl.firstChild) wrapper.appendChild(previewEl.firstChild);
+  previewEl.appendChild(wrapper);
+  return wrapper;
+}
+
+function createRealCardSlot({ altText, labelText }) {
+  const slot = document.createElement('div');
+  slot.className = 'real-card-slot loading';
+  const img = document.createElement('img');
+  img.className = 'real-card-img';
+  img.alt = altText;
+  img.loading = 'lazy';
+  img.decoding = 'async';
+  const status = document.createElement('div');
+  status.className = 'real-card-status';
+  status.textContent = labelText || 'Loading…';
+  slot.appendChild(img);
+  slot.appendChild(status);
+  return { slot, img, status };
+}
+
+async function hydrateRarityImages() {
+  const picks = {
+    ygo: {
+      'Common': { api: 'ygo', card: 'Kuriboh' },
+      'Rare': { api: 'ygo', card: 'Summoned Skull' },
+      'Super Rare': { api: 'ygo', card: 'Dark Magician Girl' },
+      'Ultra Rare': { api: 'ygo', card: 'Blue-Eyes White Dragon' },
+      'Secret Rare': { api: 'ygo', card: 'Dark Magician' },
+      'Starlight Rare': { api: 'ygo', card: 'Accesscode Talker' },
+      'Ghost Rare': { api: 'ygo', card: 'Black Rose Dragon' },
+    },
+    mtg: {
+      'Common': { api: 'mtg', card: 'Island' },
+      'Uncommon': { api: 'mtg', card: 'Counterspell' },
+      'Rare': { api: 'mtg', card: 'Snapcaster Mage' },
+      'Mythic Rare': { api: 'mtg', card: 'Jace, the Mind Sculptor' },
+      'Foil (Traditional)': { api: 'mtg', card: 'Sol Ring' },
+      'Textured / Gilded / Etched Foil': { api: 'mtg', card: 'The One Ring' },
+    },
+    poke: {
+      'Common': { api: 'poke', card: 'Pikachu' },
+      'Uncommon': { api: 'poke', card: 'Charmeleon' },
+      'Rare': { api: 'poke', card: 'Charizard' },
+      'Holo Rare / Double Rare (ex)': { api: 'poke', card: 'Charizard ex' },
+      'Reverse Holo': { api: 'poke', card: 'Eevee' },
+      'Illustration Rare (IR)': { api: 'poke', card: 'Magikarp' },
+      'Special Illustration Rare (SIR)': { api: 'poke', card: 'Iono' },
+      'Hyper Rare / ACE SPEC': { api: 'poke', card: 'Prime Catcher' },
+    },
+  };
+
+  const cards = document.querySelectorAll('#panel-ygo .rarity-card, #panel-mtg .rarity-card, #panel-poke .rarity-card');
+  for (const rarityCard of cards) {
+    const panel = rarityCard.closest('.panel');
+    if (!panel) continue;
+    const game = panel.id?.replace('panel-', '');
+    const nameEl = rarityCard.querySelector('.rarity-name');
+    const tier = normalizeTierLabel(nameEl?.textContent);
+    const pick = picks?.[game]?.[tier];
+    if (!pick) continue;
+
+    const preview = rarityCard.querySelector('.card-preview');
+    if (!preview) continue;
+    const pair = ensurePreviewPair(preview);
+
+    if (pair.querySelector('.real-card-slot')) continue;
+    const { slot, img, status } = createRealCardSlot({
+      altText: `${pick.card} — ${tier}`,
+      labelText: `Loading ${pick.card}…`,
+    });
+    pair.appendChild(slot);
+
+    try {
+      const src =
+        pick.api === 'mtg' ? await fetchScryfallImage(pick.card) :
+        pick.api === 'ygo' ? await fetchYgoProDeckImage(pick.card) :
+        pick.api === 'poke' ? await fetchPokemonTcgImage(pick.card) :
+        null;
+      if (!src) throw new Error('Unsupported API');
+      img.src = src;
+      img.addEventListener('load', () => {
+        slot.classList.remove('loading');
+        slot.classList.add('loaded');
+      }, { once: true });
+      img.addEventListener('error', () => {
+        slot.classList.remove('loading');
+        slot.classList.add('error');
+        status.textContent = `Couldn’t load ${pick.card}.`;
+      }, { once: true });
+    } catch (e) {
+      slot.classList.remove('loading');
+      slot.classList.add('error');
+      status.textContent = `Couldn’t load ${pick.card}.`;
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', hydrateRarityImages);
 </script>
 </body>
 </html>
