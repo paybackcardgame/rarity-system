@@ -2600,6 +2600,21 @@ async function fetchScryfallImage(cardName) {
   return img;
 }
 
+async function fetchScryfallSearchImage(query) {
+  const url = `https://api.scryfall.com/cards/search?order=released&unique=prints&q=${encodeURIComponent(query)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Scryfall search ${res.status}`);
+  const data = await res.json();
+  const first = data?.data?.[0];
+  const img =
+    first?.image_uris?.normal ||
+    first?.image_uris?.large ||
+    first?.card_faces?.[0]?.image_uris?.normal ||
+    first?.card_faces?.[0]?.image_uris?.large;
+  if (!img) throw new Error('No image_uris');
+  return img;
+}
+
 async function fetchYgoProDeckImage(cardName) {
   const url = `https://db.ygoprodeck.com/api/v7/cardinfo.php?name=${encodeURIComponent(cardName)}`;
   const res = await fetch(url);
@@ -2610,15 +2625,18 @@ async function fetchYgoProDeckImage(cardName) {
   return img;
 }
 
-async function fetchPokemonTcgImage(cardName) {
-  const q = `name:"${cardName}"`;
-  const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&pageSize=1`;
+async function fetchPokemonTcgImageByQuery(query) {
+  const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(query)}&pageSize=1`;
   const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
   if (!res.ok) throw new Error(`PokemonTCG ${res.status}`);
   const data = await res.json();
   const img = data?.data?.[0]?.images?.large || data?.data?.[0]?.images?.small;
   if (!img) throw new Error('No images');
   return img;
+}
+
+async function fetchPokemonTcgImage(cardName) {
+  return fetchPokemonTcgImageByQuery(`name:"${cardName}"`);
 }
 
 function ensurePreviewPair(previewEl) {
@@ -2663,18 +2681,18 @@ async function hydrateRarityImages() {
       'Uncommon': { api: 'mtg', card: 'Counterspell' },
       'Rare': { api: 'mtg', card: 'Snapcaster Mage' },
       'Mythic Rare': { api: 'mtg', card: 'Jace, the Mind Sculptor' },
-      'Foil (Traditional)': { api: 'mtg', card: 'Sol Ring' },
-      'Textured / Gilded / Etched Foil': { api: 'mtg', card: 'The One Ring' },
+      'Foil (Traditional)': { api: 'mtg', card: 'Sol Ring', scryfallQuery: '!"Sol Ring" is:foil' },
+      'Textured / Gilded / Etched Foil': { api: 'mtg', card: 'Jeweled Lotus', scryfallQuery: '!"Jeweled Lotus" is:etched' },
     },
     poke: {
       'Common': { api: 'poke', card: 'Pikachu' },
       'Uncommon': { api: 'poke', card: 'Charmeleon' },
       'Rare': { api: 'poke', card: 'Charizard' },
-      'Holo Rare / Double Rare (ex)': { api: 'poke', card: 'Charizard ex' },
-      'Reverse Holo': { api: 'poke', card: 'Eevee' },
-      'Illustration Rare (IR)': { api: 'poke', card: 'Magikarp' },
-      'Special Illustration Rare (SIR)': { api: 'poke', card: 'Iono' },
-      'Hyper Rare / ACE SPEC': { api: 'poke', card: 'Prime Catcher' },
+      'Holo Rare / Double Rare (ex)': { api: 'poke', card: 'Charizard ex', pokemonQuery: 'name:"Charizard ex" (rarity:"Double Rare" OR rarity:"Rare Holo")' },
+      'Reverse Holo': { api: 'poke', card: 'Eevee', pokemonQuery: 'name:"Eevee" rarity:"Common"' },
+      'Illustration Rare (IR)': { api: 'poke', card: 'Magikarp', pokemonQuery: 'name:"Magikarp" rarity:"Illustration Rare"' },
+      'Special Illustration Rare (SIR)': { api: 'poke', card: 'Iono', pokemonQuery: 'name:"Iono" rarity:"Special Illustration Rare"' },
+      'Hyper Rare / ACE SPEC': { api: 'poke', card: 'Prime Catcher', pokemonQuery: 'name:"Prime Catcher"' },
     },
   };
 
@@ -2701,9 +2719,9 @@ async function hydrateRarityImages() {
 
     try {
       const src =
-        pick.api === 'mtg' ? await fetchScryfallImage(pick.card) :
+        pick.api === 'mtg' ? await (pick.scryfallQuery ? fetchScryfallSearchImage(pick.scryfallQuery) : fetchScryfallImage(pick.card)) :
         pick.api === 'ygo' ? await fetchYgoProDeckImage(pick.card) :
-        pick.api === 'poke' ? await fetchPokemonTcgImage(pick.card) :
+        pick.api === 'poke' ? await (pick.pokemonQuery ? fetchPokemonTcgImageByQuery(pick.pokemonQuery) : fetchPokemonTcgImage(pick.card)) :
         null;
       if (!src) throw new Error('Unsupported API');
       img.src = src;
